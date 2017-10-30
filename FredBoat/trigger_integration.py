@@ -37,16 +37,16 @@ payload = '''
 </build>
 '''
 
-confName = os.environ["TEAMCITY_BUILDCONF_NAME"]
+projName = os.environ["TEAMCITY_PROJECT_NAME"]
 
-if confName == "FredBoat_Build":
+if projName == "FredBoat":
     displayName = "FredBoat"
-elif confName == "Lavalink_Build":
+elif projName == "Lavalink":
     displayName = "Lavalink"
-elif confName == "Private_Dike_Build":
+elif projName == "Dike":
     displayName = "Dike"
 else:
-    raise RuntimeError("Unexpected build config: " + confName)
+    raise RuntimeError("Unexpected project: " + projName)
 
 payload = payload.format(displayName,
                          displayName.lower() + "Branch",
