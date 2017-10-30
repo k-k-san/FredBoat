@@ -23,6 +23,7 @@
 #
 
 import os
+import sys
 import requests
 
 url = "https://ci.fredboat.com/app/rest/buildQueue"
@@ -30,8 +31,8 @@ url = "https://ci.fredboat.com/app/rest/buildQueue"
 payload = '''
 <build>
     <buildType id="FredBoat_Integration"/>
-    <comment><text>Integration build triggered by {}</text></comment>
     <properties>
+        <property name="env.TRIGGERED_BY" value="{}"/>
         <property name="env.{}" value="{}"/>
     </properties>
 </build>
@@ -39,17 +40,8 @@ payload = '''
 
 projName = os.environ["TEAMCITY_PROJECT_NAME"]
 
-if projName == "FredBoat":
-    displayName = "FredBoat"
-elif projName == "Lavalink":
-    displayName = "Lavalink"
-elif projName == "Dike":
-    displayName = "Dike"
-else:
-    raise RuntimeError("Unexpected project: " + projName)
-
-payload = payload.format(displayName,
-                         displayName.lower() + "Branch",
+payload = payload.format(projName,
+                         projName.upper() + "_BRANCH",
                          os.environ["BRANCH"])
 
 headers = {
@@ -62,3 +54,6 @@ password = os.environ["tempPass"]
 response = requests.request("POST", url, data=payload, headers=headers, auth=(username, password))
 
 print(response.text)
+
+if response.status_code < 200 | response.status_code > 299:
+    sys.exit(-1)
