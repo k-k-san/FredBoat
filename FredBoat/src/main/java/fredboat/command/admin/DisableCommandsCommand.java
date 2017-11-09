@@ -1,4 +1,5 @@
 /*
+ *
  * MIT License
  *
  * Copyright (c) 2017 Frederik Ar. Mikkelsen
@@ -20,74 +21,64 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
-package fredboat.command.music.seeking;
+package fredboat.command.admin;
 
-import fredboat.audio.player.GuildPlayer;
-import fredboat.audio.player.PlayerRegistry;
-import fredboat.audio.queue.AudioTrackContext;
 import fredboat.command.info.HelpCommand;
+import fredboat.commandmeta.CommandManager;
+import fredboat.commandmeta.CommandRegistry;
 import fredboat.commandmeta.abs.Command;
 import fredboat.commandmeta.abs.CommandContext;
 import fredboat.commandmeta.abs.ICommandRestricted;
-import fredboat.commandmeta.abs.IMusicCommand;
 import fredboat.messaging.internal.Context;
 import fredboat.perms.PermissionLevel;
-import fredboat.util.TextUtils;
 
 import javax.annotation.Nonnull;
 
-public class SeekCommand extends Command implements IMusicCommand, ICommandRestricted {
+public class DisableCommandsCommand extends Command implements ICommandRestricted {
 
-    public SeekCommand(String name, String... aliases) {
+    public DisableCommandsCommand(String name, String... aliases) {
         super(name, aliases);
     }
 
     @Override
     public void onInvoke(@Nonnull CommandContext context) {
-        GuildPlayer player = PlayerRegistry.getExisting(context.guild);
 
-        if(player == null || player.isQueueEmpty()) {
-            context.replyWithName(context.i18n("queueEmpty"));
-            return;
-        }
+        if (context.hasArguments()) {
+            Command command = CommandRegistry.findCommand(context.args[0]);
+            if (command == null) {
+                context.reply("This command doesn't exist!");
+                return;
+            }
 
-        if (!context.hasArguments()) {
+            if (command.name.equals("enable")
+                    || command.name.equals("disable")) {
+                context.reply("Let's not disable this :wink:");
+                return;
+            }
+
+            if (CommandManager.disabledCommands.contains(command)) {
+                context.reply("This command is already disabled!");
+                return;
+            }
+
+            CommandManager.disabledCommands.add(command);
+            context.reply(":ok_hand: Command `" + command.name + "` disabled!");
+        } else {
             HelpCommand.sendFormattedCommandHelp(context);
-            return;
         }
-
-        long t;
-        try {
-            t = TextUtils.parseTimeString(context.args[0]);
-        } catch (IllegalStateException e){
-            HelpCommand.sendFormattedCommandHelp(context);
-            return;
-        }
-
-        AudioTrackContext atc = player.getPlayingTrack();
-
-        //Ensure bounds
-        t = Math.max(0, t);
-        t = Math.min(atc.getEffectiveDuration(), t);
-
-        player.seekTo(atc.getStartPosition() + t);
-        context.reply(context.i18nFormat("seekSuccess", atc.getEffectiveTitle(), TextUtils.formatTime(t)));
     }
 
     @Nonnull
     @Override
     public String help(@Nonnull Context context) {
-        String usage = "{0}{1} [[hh:]mm:]ss\n#";
-        String example = " {0}{1} 2:45:00";
-        return usage + context.i18n("helpSeekCommand") + example;
+        return "{0}{1} <command>\n#Disable a command GLOBALLY use with caution";
     }
 
     @Nonnull
     @Override
     public PermissionLevel getMinimumPerms() {
-        return PermissionLevel.DJ;
+        return PermissionLevel.BOT_ADMIN;
     }
 }

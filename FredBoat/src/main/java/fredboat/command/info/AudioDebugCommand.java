@@ -23,71 +23,62 @@
  *
  */
 
-package fredboat.command.music.seeking;
+package fredboat.command.info;
 
+import fredboat.audio.player.AudioLossCounter;
 import fredboat.audio.player.GuildPlayer;
+import fredboat.audio.player.LavalinkManager;
 import fredboat.audio.player.PlayerRegistry;
-import fredboat.audio.queue.AudioTrackContext;
-import fredboat.command.info.HelpCommand;
 import fredboat.commandmeta.abs.Command;
 import fredboat.commandmeta.abs.CommandContext;
-import fredboat.commandmeta.abs.ICommandRestricted;
-import fredboat.commandmeta.abs.IMusicCommand;
+import fredboat.commandmeta.abs.IInfoCommand;
 import fredboat.messaging.internal.Context;
-import fredboat.perms.PermissionLevel;
 import fredboat.util.TextUtils;
 
 import javax.annotation.Nonnull;
 
-public class SeekCommand extends Command implements IMusicCommand, ICommandRestricted {
 
-    public SeekCommand(String name, String... aliases) {
+public class AudioDebugCommand extends Command implements IInfoCommand {
+
+    public AudioDebugCommand(String name, String... aliases) {
         super(name, aliases);
     }
 
     @Override
     public void onInvoke(@Nonnull CommandContext context) {
-        GuildPlayer player = PlayerRegistry.getExisting(context.guild);
-
-        if(player == null || player.isQueueEmpty()) {
-            context.replyWithName(context.i18n("queueEmpty"));
-            return;
+        if (LavalinkManager.ins.isEnabled()) {
+            handleLavalink(context);
+        } else {
+            handleLavaplayer(context);
         }
-
-        if (!context.hasArguments()) {
-            HelpCommand.sendFormattedCommandHelp(context);
-            return;
-        }
-
-        long t;
-        try {
-            t = TextUtils.parseTimeString(context.args[0]);
-        } catch (IllegalStateException e){
-            HelpCommand.sendFormattedCommandHelp(context);
-            return;
-        }
-
-        AudioTrackContext atc = player.getPlayingTrack();
-
-        //Ensure bounds
-        t = Math.max(0, t);
-        t = Math.min(atc.getEffectiveDuration(), t);
-
-        player.seekTo(atc.getStartPosition() + t);
-        context.reply(context.i18nFormat("seekSuccess", atc.getEffectiveTitle(), TextUtils.formatTime(t)));
     }
 
+    private void handleLavalink(CommandContext context) {
+        context.replyWithName("LavaLink is enabled! Showing LavaLink status instead.");
+        NodesCommand.handleLavalink(context);
+    }
+
+    private void handleLavaplayer(CommandContext context) {
+        String msg = "";
+        GuildPlayer guildPlayer = PlayerRegistry.getExisting(context.guild);
+
+        if(guildPlayer == null) {
+            msg = msg + "No GuildPlayer found.\n";
+        } else {
+            int deficit = AudioLossCounter.EXPECTED_PACKET_COUNT_PER_MIN - (guildPlayer.getAudioLossCounter().getLastMinuteLoss() + guildPlayer.getAudioLossCounter().getLastMinuteSuccess());
+
+            msg = msg + "Last minute's packet stats:\n" + TextUtils.asCodeBlock(
+                              "Packets sent:   " + guildPlayer.getAudioLossCounter().getLastMinuteSuccess() + "\n"
+                            + "Null packets:   " + guildPlayer.getAudioLossCounter().getLastMinuteLoss() + "\n"
+                            + "Packet deficit: " + deficit);
+        }
+
+        context.replyWithName(msg);
+
+    }
     @Nonnull
     @Override
     public String help(@Nonnull Context context) {
-        String usage = "{0}{1} [[hh:]mm:]ss\n#";
-        String example = " {0}{1} 2:45:00";
-        return usage + context.i18n("helpSeekCommand") + example;
-    }
-
-    @Nonnull
-    @Override
-    public PermissionLevel getMinimumPerms() {
-        return PermissionLevel.DJ;
+        return "{0}{1}\n#Show audio related debug information.";
     }
 }

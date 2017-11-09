@@ -1,4 +1,5 @@
 /*
+ *
  * MIT License
  *
  * Copyright (c) 2017 Frederik Ar. Mikkelsen
@@ -20,38 +21,14 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
-package fredboat.command.util;
+package fredboat.commandmeta.abs;
 
-import fredboat.command.info.HelpCommand;
-import fredboat.commandmeta.abs.Command;
-import fredboat.commandmeta.abs.CommandContext;
-import fredboat.commandmeta.abs.IUtilCommand;
-import fredboat.messaging.internal.Context;
-
-import javax.annotation.Nonnull;
-
-public class AvatarCommand extends Command implements IUtilCommand {
-
-    public AvatarCommand(String name, String... aliases) {
-        super(name, aliases);
-    }
-
-    @Override
-    public void onInvoke(@Nonnull CommandContext context) {
-        if (context.getMentionedUsers().isEmpty()) {
-            HelpCommand.sendFormattedCommandHelp(context);
-        } else {
-            context.replyWithName(context.i18nFormat("avatarSuccess",
-                    context.getMentionedUsers().get(0).getAvatarUrl()));
-        }
-    }
-
-    @Nonnull
-    @Override
-    public String help(@Nonnull Context context) {
-        return "{0}{1} @<username>\n#" + context.i18n("helpAvatarCommand");
-    }
+/**
+ * Created by napster on 09.11.17.
+ * <p>
+ * Commands that allow guilds / users to change any kind of FredBoat settings
+ */
+public interface IConfigCommand {
 }

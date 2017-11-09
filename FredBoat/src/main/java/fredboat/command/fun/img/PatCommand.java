@@ -23,45 +23,38 @@
  *
  */
 
-package fredboat.command.admin;
+package fredboat.command.fun.img;
 
-import fredboat.commandmeta.abs.Command;
 import fredboat.commandmeta.abs.CommandContext;
-import fredboat.commandmeta.abs.ICommandRestricted;
+import fredboat.commandmeta.abs.IFunCommand;
 import fredboat.messaging.internal.Context;
-import fredboat.perms.PermissionLevel;
-import net.dv8tion.jda.core.entities.Message;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
-import java.util.function.Consumer;
 
+public class PatCommand extends RandomImageCommand implements IFunCommand {
 
-public class LeaveServerCommand extends Command implements ICommandRestricted {
-
-    private static final Logger log = LoggerFactory.getLogger(LeaveServerCommand.class);
-
-    public LeaveServerCommand(String name, String... aliases) {
-        super(name, aliases);
+    public PatCommand(String imgurAlbumUrl, String name, String... aliases) {
+        super(imgurAlbumUrl, name, aliases);
     }
 
     @Override
     public void onInvoke(@Nonnull CommandContext context) {
-        Consumer<Message> callback = aVoid -> context.guild.leave().queue();
-        Consumer<Throwable> throwConsumer = ex -> log.error("Error leaving server.", ex);
-        context.channel.sendMessage("Thanks for having me!").queue(callback, throwConsumer);
+        String patMessage = null;
+        if (!context.getMentionedUsers().isEmpty()) {
+            if (context.getMentionedUsers().get(0).getIdLong() == context.msg.getJDA().getSelfUser().getIdLong()) {
+                patMessage = context.i18n("patBot");
+            } else {
+                patMessage = "_"
+                        + context.i18nFormat("patSuccess", context.getMentionedUsers().get(0).getAsMention())
+                        + "_";
+            }
+        }
+        context.replyImage(super.getRandomImageUrl(), patMessage);
     }
 
     @Nonnull
     @Override
     public String help(@Nonnull Context context) {
-        return "{0}{1}\n#Leave the server.";
-    }
-
-    @Nonnull
-    @Override
-    public PermissionLevel getMinimumPerms() {
-        return PermissionLevel.BOT_ADMIN;
+        return "{0}{1} @<username>\n#Pat someone.";
     }
 }

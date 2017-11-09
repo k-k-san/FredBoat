@@ -22,72 +22,43 @@
  * SOFTWARE.
  *
  */
+package fredboat.command.fun;
 
-package fredboat.command.music.seeking;
-
-import fredboat.audio.player.GuildPlayer;
-import fredboat.audio.player.PlayerRegistry;
-import fredboat.audio.queue.AudioTrackContext;
 import fredboat.command.info.HelpCommand;
 import fredboat.commandmeta.abs.Command;
 import fredboat.commandmeta.abs.CommandContext;
-import fredboat.commandmeta.abs.ICommandRestricted;
-import fredboat.commandmeta.abs.IMusicCommand;
+import fredboat.commandmeta.abs.IFunCommand;
+import fredboat.event.EventListenerBoat;
 import fredboat.messaging.internal.Context;
-import fredboat.perms.PermissionLevel;
 import fredboat.util.TextUtils;
 
 import javax.annotation.Nonnull;
 
-public class SeekCommand extends Command implements IMusicCommand, ICommandRestricted {
+/**
+ *
+ * @author frederik
+ */
+public class SayCommand extends Command implements IFunCommand {
 
-    public SeekCommand(String name, String... aliases) {
+    public SayCommand(String name, String... aliases) {
         super(name, aliases);
     }
 
     @Override
     public void onInvoke(@Nonnull CommandContext context) {
-        GuildPlayer player = PlayerRegistry.getExisting(context.guild);
-
-        if(player == null || player.isQueueEmpty()) {
-            context.replyWithName(context.i18n("queueEmpty"));
-            return;
-        }
-
         if (!context.hasArguments()) {
             HelpCommand.sendFormattedCommandHelp(context);
             return;
         }
+        context.reply(TextUtils.ZERO_WIDTH_CHAR + context.rawArgs,
+                message -> EventListenerBoat.messagesToDeleteIfIdDeleted.put(context.msg.getIdLong(), message.getIdLong())
+        );
 
-        long t;
-        try {
-            t = TextUtils.parseTimeString(context.args[0]);
-        } catch (IllegalStateException e){
-            HelpCommand.sendFormattedCommandHelp(context);
-            return;
-        }
-
-        AudioTrackContext atc = player.getPlayingTrack();
-
-        //Ensure bounds
-        t = Math.max(0, t);
-        t = Math.min(atc.getEffectiveDuration(), t);
-
-        player.seekTo(atc.getStartPosition() + t);
-        context.reply(context.i18nFormat("seekSuccess", atc.getEffectiveTitle(), TextUtils.formatTime(t)));
     }
 
     @Nonnull
     @Override
     public String help(@Nonnull Context context) {
-        String usage = "{0}{1} [[hh:]mm:]ss\n#";
-        String example = " {0}{1} 2:45:00";
-        return usage + context.i18n("helpSeekCommand") + example;
-    }
-
-    @Nonnull
-    @Override
-    public PermissionLevel getMinimumPerms() {
-        return PermissionLevel.DJ;
+        return "{0}{1} <text>\n#" + context.i18n("helpSayCommand");
     }
 }

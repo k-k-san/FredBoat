@@ -25,15 +25,14 @@
 package fredboat.commandmeta;
 
 import fredboat.command.admin.*;
+import fredboat.command.config.*;
 import fredboat.command.fun.*;
-import fredboat.command.maintenance.*;
+import fredboat.command.fun.img.*;
+import fredboat.command.info.*;
 import fredboat.command.moderation.*;
 import fredboat.command.music.control.*;
 import fredboat.command.music.info.*;
-import fredboat.command.music.seeking.ForwardCommand;
-import fredboat.command.music.seeking.RestartCommand;
-import fredboat.command.music.seeking.RewindCommand;
-import fredboat.command.music.seeking.SeekCommand;
+import fredboat.command.music.seeking.*;
 import fredboat.command.util.*;
 import fredboat.perms.PermissionLevel;
 import fredboat.util.AsciiArtConstant;
@@ -49,37 +48,41 @@ public class CommandInitializer {
 
         // Administrative Module - always on (as in, essential commands for BOT_ADMINs and BOT_OWNER)
         CommandRegistry adminModule = new CommandRegistry(CommandRegistry.Module.ADMIN);
-        adminModule.registerCommand(new UnblacklistCommand("unblacklist", "unlimit"));
-        adminModule.registerCommand(new BotRestartCommand("botrestart"));
-        adminModule.registerCommand(new EvalCommand("eval"));
-        adminModule.registerCommand(new ReviveCommand("revive"));
-        adminModule.registerCommand(new SentryDsnCommand("sentrydsn"));
-        adminModule.registerCommand(new TestCommand("test"));
-        adminModule.registerCommand(new ExitCommand("exit"));
-        adminModule.registerCommand(new LeaveServerCommand("leaveserver"));
         adminModule.registerCommand(new AnnounceCommand("announce"));
-        adminModule.registerCommand(new NodeAdminCommand("node"));
-        adminModule.registerCommand(new GetNodeCommand("getnode"));
+        adminModule.registerCommand(new BotRestartCommand("botrestart"));
         adminModule.registerCommand(new DisableCommandsCommand("disable"));
         adminModule.registerCommand(new EnableCommandsCommand("enable"));
-        adminModule.registerCommand(new SetAvatarCommand("setavatar"));
+        adminModule.registerCommand(new EvalCommand("eval"));
+        adminModule.registerCommand(new ExitCommand("exit"));
+        adminModule.registerCommand(new GetNodeCommand("getnode"));
+        adminModule.registerCommand(new LeaveServerCommand("leaveserver"));
+        adminModule.registerCommand(new NodeAdminCommand("node"));
         adminModule.registerCommand(new PlayerDebugCommand("playerdebug"));
+        adminModule.registerCommand(new ReviveCommand("revive"));
+        adminModule.registerCommand(new SentryDsnCommand("sentrydsn"));
+        adminModule.registerCommand(new SetAvatarCommand("setavatar"));
+        adminModule.registerCommand(new TestCommand("test"));
+        adminModule.registerCommand(new UnblacklistCommand("unblacklist", "unlimit"));
 
 
         // Informational / Debugging / Maintenance - always on
         CommandRegistry infoModule = new CommandRegistry(CommandRegistry.Module.INFORMATIONAL);
-        infoModule.registerCommand(new HelpCommand("help", "info"));
-        infoModule.registerCommand(new MusicHelpCommand("music", "musichelp"));
-        infoModule.registerCommand(new CommandsCommand("commands", "comms", "cmds"));
-        infoModule.registerCommand(new InviteCommand("invite"));
-        infoModule.registerCommand(new VersionCommand("version"));
-        infoModule.registerCommand(new StatsCommand("stats", "uptime"));
-        infoModule.registerCommand(new GitInfoCommand("gitinfo", "git"));
-        infoModule.registerCommand(new ShardsCommand("shards"));
-        infoModule.registerCommand(new GetIdCommand("getid"));
-        infoModule.registerCommand(new DebugCommand("debug"));
         infoModule.registerCommand(new AudioDebugCommand("adebug"));
+        infoModule.registerCommand(new CommandsCommand("commands", "comms", "cmds"));
+        infoModule.registerCommand(new DebugCommand("debug"));
+        infoModule.registerCommand(new FuzzyUserSearchCommand("fuzzy"));
+        infoModule.registerCommand(new GetIdCommand("getid"));
+        infoModule.registerCommand(new GitInfoCommand("gitinfo", "git"));
+        infoModule.registerCommand(new HelpCommand("help", "info"));
+        infoModule.registerCommand(new InviteCommand("invite"));
+        infoModule.registerCommand(new MusicHelpCommand("music", "musichelp"));
         infoModule.registerCommand(new NodesCommand("nodes"));
+        infoModule.registerCommand(new PingCommand("ping"));
+        infoModule.registerCommand(new ShardsCommand("shards"));
+        infoModule.registerCommand(new StatsCommand("stats", "uptime"));
+        infoModule.registerCommand(new VersionCommand("version"));
+        infoModule.registerCommand(new TextCommand("https://github.com/Frederikam", "github"));
+        infoModule.registerCommand(new TextCommand("https://github.com/Frederikam/FredBoat", "repo"));
 
 
         // Configurational stuff - always on
@@ -95,33 +98,29 @@ public class CommandInitializer {
 
         // Moderation Module - Anything related to managing Discord guilds
         CommandRegistry moderationModule = new CommandRegistry(CommandRegistry.Module.MODERATION);
+        moderationModule.registerCommand(new ClearCommand("clear"));
         moderationModule.registerCommand(new HardbanCommand("hardban", "hb"));
         moderationModule.registerCommand(new KickCommand("kick"));
         moderationModule.registerCommand(new SoftbanCommand("softban", "sb"));
-        moderationModule.registerCommand(new ClearCommand("clear"));
 
 
         // Utility Module - Like Fun commands but without the fun ¯\_(ツ)_/¯
         CommandRegistry utilityModule = new CommandRegistry(CommandRegistry.Module.UTILITY);
+        utilityModule.registerCommand(new AvatarCommand("avatar", "ava"));
+        utilityModule.registerCommand(new BrainfuckCommand("brainfuck"));
+        utilityModule.registerCommand(new MALCommand("mal"));
+        utilityModule.registerCommand(new MathCommand("math"));
         utilityModule.registerCommand(new ServerInfoCommand("serverinfo", "guildinfo"));
         utilityModule.registerCommand(new UserInfoCommand("userinfo", "memberinfo"));
-        utilityModule.registerCommand(new PingCommand("ping"));
-        utilityModule.registerCommand(new FuzzyUserSearchCommand("fuzzy"));
-        utilityModule.registerCommand(new MathCommand("math"));
         utilityModule.registerCommand(new WeatherCommand(new OpenWeatherAPI(), "weather"));
-        utilityModule.registerCommand(new AvatarCommand("avatar", "ava"));
-        utilityModule.registerCommand(new MALCommand("mal"));
-        utilityModule.registerCommand(new BrainfuckCommand("brainfuck"));
-        utilityModule.registerCommand(new TextCommand("https://github.com/Frederikam", "github"));
-        utilityModule.registerCommand(new TextCommand("https://github.com/Frederikam/FredBoat", "repo"));
 
 
         // Fun Module - mostly ascii, memes, pictures, games
         CommandRegistry funModule = new CommandRegistry(CommandRegistry.Module.FUN);
+        funModule.registerCommand(new AkinatorCommand("akinator", "aki"));
+        funModule.registerCommand(new DanceCommand("dance"));
         funModule.registerCommand(new JokeCommand("joke", "jk"));
         funModule.registerCommand(new RiotCommand("riot"));
-        funModule.registerCommand(new DanceCommand("dance"));
-        funModule.registerCommand(new AkinatorCommand("akinator", "aki"));
         funModule.registerCommand(new SayCommand("say"));
 
         /* Other Anime Discord, Sergi memes or any other memes
@@ -166,50 +165,50 @@ public class CommandInitializer {
         funModule.registerCommand(new TextCommand(AsciiArtConstant.EAGLE_OF_LENNY, "eagleoflenny", "eol", "lennyeagle"));
 
         /* Random images / image collections */
+        funModule.registerCommand(new CatgirlCommand("catgirl", "neko", "catgrill"));
+        funModule.registerCommand(new FacedeskCommand("https://imgur.com/a/I5Q4U", "facedesk"));
         funModule.registerCommand(new HugCommand("https://imgur.com/a/jHJOc", "hug"));
         funModule.registerCommand(new PatCommand("https://imgur.com/a/WiPTl", "pat"));
-        funModule.registerCommand(new FacedeskCommand("https://imgur.com/a/I5Q4U", "facedesk"));
         funModule.registerCommand(new RollCommand("https://imgur.com/a/lrEwS", "roll"));
-        funModule.registerCommand(new CatgirlCommand("catgirl", "neko", "catgrill"));
 
 
         // Music Module
 
         CommandRegistry musicModule = new CommandRegistry(CommandRegistry.Module.MUSIC);
         /* Control */
+        musicModule.registerCommand(new DestroyCommand("destroy"));
+        musicModule.registerCommand(new JoinCommand("join", "summon", "jn", "j"));
+        musicModule.registerCommand(new LeaveCommand("leave", "lv"));
+        musicModule.registerCommand(new PauseCommand("pause", "pa", "ps"));
         musicModule.registerCommand(new PlayCommand(Arrays.asList(SearchUtil.SearchProvider.YOUTUBE, SearchUtil.SearchProvider.SOUNDCLOUD),
                 "play", "p"));
         musicModule.registerCommand(new PlayCommand(Collections.singletonList(SearchUtil.SearchProvider.YOUTUBE),
                 "youtube", "yt"));
         musicModule.registerCommand(new PlayCommand(Collections.singletonList(SearchUtil.SearchProvider.SOUNDCLOUD),
                 "soundcloud", "sc"));
-        musicModule.registerCommand(new SkipCommand("skip", "sk", "s"));
-        musicModule.registerCommand(new VoteSkipCommand("voteskip", "vsk", "v"));
-        musicModule.registerCommand(new JoinCommand("join", "summon", "jn", "j"));
-        musicModule.registerCommand(new LeaveCommand("leave", "lv"));
-        musicModule.registerCommand(new SelectCommand("select", buildNumericalSelectAliases("sel")));
-        musicModule.registerCommand(new StopCommand("stop", "st"));
-        musicModule.registerCommand(new PauseCommand("pause", "pa", "ps"));
-        musicModule.registerCommand(new ShuffleCommand("shuffle", "sh", "random"));
-        musicModule.registerCommand(new ReshuffleCommand("reshuffle", "resh"));
-        musicModule.registerCommand(new RepeatCommand("repeat", "rep"));
-        musicModule.registerCommand(new VolumeCommand("volume", "vol"));
-        musicModule.registerCommand(new UnpauseCommand("unpause", "unp", "resume"));
         musicModule.registerCommand(new PlaySplitCommand("split"));
-        musicModule.registerCommand(new DestroyCommand("destroy"));
+        musicModule.registerCommand(new RepeatCommand("repeat", "rep"));
+        musicModule.registerCommand(new ReshuffleCommand("reshuffle", "resh"));
+        musicModule.registerCommand(new SelectCommand("select", buildNumericalSelectAliases("sel")));
+        musicModule.registerCommand(new ShuffleCommand("shuffle", "sh", "random"));
+        musicModule.registerCommand(new SkipCommand("skip", "sk", "s"));
+        musicModule.registerCommand(new StopCommand("stop", "st"));
+        musicModule.registerCommand(new UnpauseCommand("unpause", "unp", "resume"));
+        musicModule.registerCommand(new VolumeCommand("volume", "vol"));
+        musicModule.registerCommand(new VoteSkipCommand("voteskip", "vsk", "v"));
 
         /* Info */
-        musicModule.registerCommand(new NowplayingCommand("nowplaying", "np"));
-        musicModule.registerCommand(new ListCommand("list", "queue", "q", "l"));
-        musicModule.registerCommand(new HistoryCommand("history", "hist", "h"));
         musicModule.registerCommand(new ExportCommand("export", "ex"));
         musicModule.registerCommand(new GensokyoRadioCommand("gensokyo", "gr", "gensokyoradio"));
+        musicModule.registerCommand(new HistoryCommand("history", "hist", "h"));
+        musicModule.registerCommand(new ListCommand("list", "queue", "q", "l"));
+        musicModule.registerCommand(new NowplayingCommand("nowplaying", "np"));
 
         /* Seeking */
-        musicModule.registerCommand(new SeekCommand("seek"));
         musicModule.registerCommand(new ForwardCommand("forward", "fwd"));
-        musicModule.registerCommand(new RewindCommand("rewind", "rew"));
         musicModule.registerCommand(new RestartCommand("restart", "replay"));
+        musicModule.registerCommand(new RewindCommand("rewind", "rew"));
+        musicModule.registerCommand(new SeekCommand("seek"));
     }
 
 

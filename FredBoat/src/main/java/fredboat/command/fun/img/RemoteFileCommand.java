@@ -20,66 +20,37 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
  */
 
-package fredboat.command.admin;
+package fredboat.command.fun.img;
 
-import fredboat.command.info.HelpCommand;
 import fredboat.commandmeta.abs.Command;
 import fredboat.commandmeta.abs.CommandContext;
-import fredboat.commandmeta.abs.ICommandRestricted;
-import fredboat.feature.togglz.FeatureFlags;
+import fredboat.commandmeta.abs.IFunCommand;
 import fredboat.messaging.internal.Context;
-import fredboat.perms.PermissionLevel;
-import fredboat.util.ratelimit.Ratelimiter;
-import net.dv8tion.jda.core.entities.User;
+import fredboat.util.rest.CacheUtil;
 
 import javax.annotation.Nonnull;
 
-/**
- * Created by napster on 17.04.17.
- * <p>
- * Lift ratelimit and remove a user from the blacklist
- */
-public class UnblacklistCommand extends Command implements ICommandRestricted {
+public class RemoteFileCommand extends Command implements IFunCommand {
 
-    public UnblacklistCommand(String name, String... aliases) {
+    public String url;
+
+    public RemoteFileCommand(String url, String name, String... aliases) {
         super(name, aliases);
+        this.url = url;
     }
 
     @Override
     public void onInvoke(@Nonnull CommandContext context) {
-        if (!FeatureFlags.RATE_LIMITER.isActive()) {
-            context.replyWithName("The rate limiter feature has not been turned on.");
-            return;
-        }
-
-        if (context.getMentionedUsers().isEmpty()) {
-            HelpCommand.sendFormattedCommandHelp(context);
-            return;
-        }
-
-        User user = context.getMentionedUsers().get(0);
-        String userId = user.getId();
-
-        if (userId == null || "".equals(userId)) {
-            HelpCommand.sendFormattedCommandHelp(context);
-            return;
-        }
-
-        Ratelimiter.getRatelimiter().liftLimitAndBlacklist(user.getIdLong());
-        context.replyWithName(context.i18nFormat("unblacklisted", user.getAsMention()));
+        //NOTE: moving this to Context#replyImage breaks the ;;gif one
+        context.replyFile(CacheUtil.getImageFromURL(url), null);
     }
 
     @Nonnull
     @Override
     public String help(@Nonnull Context context) {
-        return "{0}{1} @<user>\n#Remove a user from the blacklist.";
-    }
-
-    @Nonnull
-    @Override
-    public PermissionLevel getMinimumPerms() {
-        return PermissionLevel.BOT_OWNER;
+        return "{0}{1}\n#Post a funny image or meme.";
     }
 }
