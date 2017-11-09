@@ -67,9 +67,9 @@ public class MusicHelpCommand extends Command implements IUtilCommand {
     private static List<String> getMusicComms(Context context) {
         //aggregate all commands and the aliases they may be called with
         Map<Class<? extends Command>, List<String>> commandToAliases = new HashMap<>();
-        Set<String> commandsAndAliases = CommandRegistry.getRegisteredCommandsAndAliases();
+        Set<String> commandsAndAliases = CommandRegistry.getAllRegisteredCommandsAndAliases();
         for (String commandOrAlias : commandsAndAliases) {
-            Command command = CommandRegistry.getCommand(commandOrAlias).command;
+            Command command = CommandRegistry.findCommand(commandOrAlias);
 
             List<String> aliases = commandToAliases.get(command.getClass());
             if (aliases == null) aliases = new ArrayList<>();
@@ -80,7 +80,7 @@ public class MusicHelpCommand extends Command implements IUtilCommand {
         //sum up existing music commands & sort them in a presentable way
         List<Command> sortedComms = new ArrayList<>();
         for (List<String> as : commandToAliases.values()) {
-            Command c = CommandRegistry.getCommand(as.get(0)).command;
+            Command c = CommandRegistry.findCommand(as.get(0));
             if (c instanceof IMusicCommand)
                 sortedComms.add(c);
         }
@@ -91,7 +91,7 @@ public class MusicHelpCommand extends Command implements IUtilCommand {
         for (Command command : sortedComms) {
 
             String mainAlias = commandToAliases.get(command.getClass()).get(0);
-            mainAlias = CommandRegistry.getCommand(mainAlias).name;
+            mainAlias = CommandRegistry.findCommand(mainAlias).name;
             String formattedHelp = HelpCommand.getFormattedCommandHelp(context, command, mainAlias);
             musicComms.add(formattedHelp);
         }

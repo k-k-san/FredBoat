@@ -133,16 +133,14 @@ public class HelpCommand extends Command implements IUtilCommand {
     }
 
     private static void sendFormattedCommandHelp(CommandContext context, String trigger) {
-        CommandRegistry.CommandEntry commandEntry = CommandRegistry.getCommand(trigger);
-        if (commandEntry == null) {
+        Command command = CommandRegistry.findCommand(trigger);
+        if (command == null) {
             String out = "`" + TextUtils.escapeMarkdown(context.getPrefix()) + trigger + "`: " + context.i18n("helpUnknownCommand");
             out += "\n" + context.i18nFormat("helpCommandsPromotion",
                     "`" + TextUtils.escapeMarkdown(context.getPrefix()) + "commands`");
             context.replyWithName(out);
             return;
         }
-
-        Command command = commandEntry.command;
 
         String out = getFormattedCommandHelp(context, command, trigger);
 

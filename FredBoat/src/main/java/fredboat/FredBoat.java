@@ -151,7 +151,7 @@ public abstract class FredBoat {
 
         //Commands
         CommandInitializer.initCommands();
-        log.info("Loaded commands, registry size is " + CommandRegistry.getSize());
+        log.info("Loaded commands, registry size is " + CommandRegistry.getTotalSize());
 
         if (!Config.CONFIG.isPatronDistribution() && Config.CONFIG.useVoiceChannelCleanup()) {
             log.info("Starting VoiceChannelCleanupAgent.");

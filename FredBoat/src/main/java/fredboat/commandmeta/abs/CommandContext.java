@@ -130,8 +130,8 @@ public class CommandContext extends Context {
 
         String commandTrigger = args[0];
 
-        CommandRegistry.CommandEntry entry = CommandRegistry.getCommand(commandTrigger.toLowerCase());
-        if (entry == null) {
+        Command command = CommandRegistry.findCommand(commandTrigger.toLowerCase());
+        if (command == null) {
             log.info("Unknown command:\t{}", commandTrigger);
             return null;
         } else {
@@ -143,7 +143,7 @@ public class CommandContext extends Context {
 
             context.isMention = isMention;
             context.trigger = commandTrigger;
-            context.command = entry.command;
+            context.command = command;
             context.args = Arrays.copyOfRange(args, 1, args.length);//exclude args[0] that contains the command trigger
             context.rawArgs = input.replaceFirst(commandTrigger, "").trim();
             return context;

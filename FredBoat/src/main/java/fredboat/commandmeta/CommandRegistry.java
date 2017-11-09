@@ -26,73 +26,80 @@
 package fredboat.commandmeta;
 
 import fredboat.commandmeta.abs.Command;
-import fredboat.commandmeta.abs.CommandContext;
-import fredboat.messaging.internal.Context;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class CommandRegistry {
 
-    private static HashMap<String, CommandEntry> registry = new HashMap<>();
+    private static Map<Module, CommandRegistry> modules = new HashMap<>();
 
-    public static void registerCommand(@Nonnull Command command) {
-        String name = command.name.toLowerCase();
-        CommandEntry entry = new CommandEntry(command, name);
-        registry.put(name, entry);
-        for (String alias : command.aliases) {
-            registry.put(alias.toLowerCase(), entry);
-        }
+    public static void registerModule(@Nonnull CommandRegistry registry) {
+        modules.put(registry.module, registry);
     }
 
     @Nullable
-    public static CommandEntry getCommand(@Nonnull String name) {
-        return registry.get(name);
+    public static Command findCommand(@Nonnull String name) {
+        return modules.values().stream()
+                .map(cr -> cr.getCommand(name))
+                .findAny()
+                .orElse(null);
     }
 
-    public static int getSize() {
-        return registry.size();
+    public static int getTotalSize() {
+        return modules.values().stream()
+                .mapToInt(CommandRegistry::getSize)
+                .sum();
     }
 
-    public static Set<String> getRegisteredCommandsAndAliases() {
+    public static Set<String> getAllRegisteredCommandsAndAliases() {
+        return modules.values().stream()
+                .flatMap(cr -> cr.getRegisteredCommandsAndAliases().stream())
+                .collect(Collectors.toSet());
+    }
+
+
+    private HashMap<String, Command> registry = new HashMap<>();
+    private final Module module;
+
+    public CommandRegistry(@Nonnull Module module) {
+        this.module = module;
+        registerModule(this);
+    }
+
+    public void registerCommand(@Nonnull Command command) {
+        String name = command.name.toLowerCase();
+        registry.put(name, command);
+        for (String alias : command.aliases) {
+            registry.put(alias.toLowerCase(), command);
+        }
+    }
+
+    @Nonnull
+    public Set<String> getRegisteredCommandsAndAliases() {
         return registry.keySet();
     }
 
-    public static void removeCommand(String name) {
-        CommandEntry entry = new CommandEntry(new Command(name) {
-            @Override
-            public void onInvoke(@Nonnull CommandContext context) {
-                context.reply("This command is temporarily disabled");
-            }
-
-            @Nonnull
-            @Override
-            public String help(@Nonnull Context context) {
-                return "Temporarily disabled command";
-            }
-        }, name);
-
-        registry.put(name, entry);
+    public int getSize() {
+        return registry.size();
     }
 
-    public static class CommandEntry {
+    @Nullable
+    public Command getCommand(@Nonnull String name) {
+        return registry.get(name);
+    }
 
-        public Command command;
-        public String name;
-
-        CommandEntry(Command command, String name) {
-            this.command = command;
-            this.name = name;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setCommand(Command command) {
-            this.command = command;
-        }
+    public enum Module {
+        ADMIN,
+        INFORMATIONAL,
+        CONFIG,
+        MUSIC,
+        MODERATION,
+        UTILITY,
+        FUN
     }
 }

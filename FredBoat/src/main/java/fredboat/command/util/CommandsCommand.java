@@ -80,10 +80,10 @@ public class CommandsCommand extends Command implements IUtilCommand {
     }
 
     private void mainBotHelp(CommandContext context) {
-        Set<String> commandsAndAliases = CommandRegistry.getRegisteredCommandsAndAliases();
+        Set<String> commandsAndAliases = CommandRegistry.getAllRegisteredCommandsAndAliases();
         Set<String> unsortedAliases = new HashSet<>(); //hash set = only unique commands
         for (String commandOrAlias : commandsAndAliases) {
-            String mainAlias = CommandRegistry.getCommand(commandOrAlias).name;
+            String mainAlias = CommandRegistry.findCommand(commandOrAlias).name;
             unsortedAliases.add(mainAlias);
         }
         //alphabetical order
@@ -98,7 +98,7 @@ public class CommandsCommand extends Command implements IUtilCommand {
         String owner = "**" + context.i18n("commandsBotOwner") + ":** ";
 
         for (String alias : sortedAliases) {
-            Command c = CommandRegistry.getCommand(alias).command;
+            Command c = CommandRegistry.findCommand(alias);
             String formattedAlias = "`" + alias + "` ";
 
             if (c instanceof ICommandRestricted
