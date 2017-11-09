@@ -35,6 +35,7 @@ import org.hibernate.annotations.ColumnDefault;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.persistence.*;
 import java.io.Serializable;
@@ -124,16 +125,16 @@ public class GuildConfig implements IEntity, Serializable {
         return enabledModuleBits;
     }
 
-    public void enableModule(CommandRegistry.Module module) {
+    public void enableModule(@Nonnull CommandRegistry.Module module) {
         enabledModuleBits |= module.bits;
     }
 
-    public void disableModule(CommandRegistry.Module module) {
+    public void disableModule(@Nonnull CommandRegistry.Module module) {
         enabledModuleBits &= ~module.bits;
     }
 
     //check whether the bits of the module are present in the enabled bits
-    public boolean isModuleEnabled(CommandRegistry.Module module) {
+    public boolean isModuleEnabled(@Nonnull CommandRegistry.Module module) {
         return (module.bits & enabledModuleBits) == module.bits;
     }
 

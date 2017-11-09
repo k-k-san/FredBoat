@@ -34,22 +34,22 @@ import fredboat.command.info.ShardsCommand;
 import fredboat.command.info.StatsCommand;
 import fredboat.command.music.control.SkipCommand;
 import fredboat.commandmeta.CommandManager;
+import fredboat.commandmeta.CommandRegistry;
 import fredboat.commandmeta.abs.CommandContext;
 import fredboat.db.EntityReader;
+import fredboat.db.entity.GuildConfig;
 import fredboat.feature.I18n;
 import fredboat.feature.metrics.Metrics;
 import fredboat.feature.togglz.FeatureFlags;
 import fredboat.messaging.CentralMessaging;
+import fredboat.perms.PermissionLevel;
+import fredboat.perms.PermsUtil;
 import fredboat.util.DiscordUtil;
 import fredboat.util.TextUtils;
 import fredboat.util.Tuple2;
 import fredboat.util.ratelimit.Ratelimiter;
 import io.prometheus.client.Histogram;
-import net.dv8tion.jda.core.entities.Guild;
-import net.dv8tion.jda.core.entities.Member;
-import net.dv8tion.jda.core.entities.Message;
-import net.dv8tion.jda.core.entities.TextChannel;
-import net.dv8tion.jda.core.entities.VoiceChannel;
+import net.dv8tion.jda.core.entities.*;
 import net.dv8tion.jda.core.events.guild.GuildLeaveEvent;
 import net.dv8tion.jda.core.events.guild.voice.GuildVoiceJoinEvent;
 import net.dv8tion.jda.core.events.guild.voice.GuildVoiceLeaveEvent;
@@ -120,11 +120,24 @@ public class EventListenerBoat extends AbstractEventListener {
 
         //ignore all commands in channels where we can't write, except for the help command
         if (!channel.canTalk() && !(context.command instanceof HelpCommand)) {
-            log.info("Ignored command because this bot cannot write in that channel");
+            log.info("Ignoring command {} because this bot cannot write in that channel", context.command.name);
             return;
         }
 
         Metrics.commandsReceived.labels(context.command.getClass().getSimpleName()).inc();
+
+        //BOT_ADMINs can always use all commands everywhere
+        if (!PermsUtil.checkPerms(PermissionLevel.BOT_ADMIN, event.getMember())) {
+
+            //ignore commands of disabled modules for plebs
+            GuildConfig gc = EntityReader.getGuildConfig(event.getGuild().getId());
+            CommandRegistry.Module module = context.command.getModule();
+            if (module != null && !gc.isModuleEnabled(module)) {
+                log.debug("Ignoring command {} because its module {} is disabled in guild {}",
+                        context.command.name, module.name(), event.getGuild().getIdLong());
+                return;
+            }
+        }
 
         limitOrExecuteCommand(context);
     }

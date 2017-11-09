@@ -80,6 +80,7 @@ public class CommandRegistry {
         for (String alias : command.aliases) {
             registry.put(alias.toLowerCase(), command);
         }
+        command.setModule(this.module);
     }
 
     @Nonnull
