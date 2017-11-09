@@ -26,21 +26,17 @@
 package fredboat.db.entity;
 
 import fredboat.FredBoat;
+import fredboat.commandmeta.CommandRegistry;
 import fredboat.db.DatabaseManager;
 import fredboat.db.DatabaseNotReadyException;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.ColumnDefault;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import javax.persistence.Cacheable;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EntityManager;
-import javax.persistence.Id;
-import javax.persistence.PersistenceException;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Optional;
@@ -70,6 +66,10 @@ public class GuildConfig implements IEntity, Serializable {
     //may be null to indicate that there is no custom prefix for this guild
     @Column(name = "prefix", nullable = true, columnDefinition = "text")
     private String prefix;
+
+    @Column(name = "enabled_module_bits", nullable = false)
+    @ColumnDefault(value = "15") //see default modules
+    private long enabledModuleBits = CommandRegistry.Module.DEFAULT_MODULES;
 
     public GuildConfig(String id) {
         this.guildId = id;
@@ -120,41 +120,23 @@ public class GuildConfig implements IEntity, Serializable {
         this.prefix = prefix;
     }
 
-    /*@OneToMany
-    @JoinColumn(name = "guildconfig")
-    private Set<TCConfig> textChannels;
-
-    public GuildConfig(Guild guild) {
-        this.guildId = Long.parseLong(guild.getId());
-
-        textChannels = new CopyOnWriteArraySet<>();
-
-        for (TextChannel tc : guild.getTextChannels()) {
-            TCConfig tcc = new TCConfig(this, tc);
-            textChannels.add(tcc);
-        }
-
-        for (TCConfig tcc : textChannels) {
-            DatabaseManager.getEntityManager().persist(tcc);
-        }
+    public long getEnabledModuleBits() {
+        return enabledModuleBits;
     }
 
-    public Set<TCConfig> getTextChannels() {
-        return textChannels;
+    public void enableModule(CommandRegistry.Module module) {
+        enabledModuleBits |= module.bits;
     }
 
-    public void addTextChannel(TCConfig tcc){
-        textChannels.add(tcc);
+    public void disableModule(CommandRegistry.Module module) {
+        enabledModuleBits &= ~module.bits;
     }
 
-    public void removeTextChannel(TCConfig tcc){
-        textChannels.remove(tcc);
+    //check whether the bits of the module are present in the enabled bits
+    public boolean isModuleEnabled(CommandRegistry.Module module) {
+        return (module.bits & enabledModuleBits) == module.bits;
     }
 
-    public long getGuildId() {
-        return guildId;
-    }
-    */
 
     //shortcut to load the prefix without fetching the whole entity because the prefix will be needed rather often
     // without the rest of the guildconfig information

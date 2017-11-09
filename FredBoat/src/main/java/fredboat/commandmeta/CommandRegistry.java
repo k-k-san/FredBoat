@@ -26,11 +26,13 @@
 package fredboat.commandmeta;
 
 import fredboat.commandmeta.abs.Command;
+import fredboat.util.Emojis;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -46,6 +48,7 @@ public class CommandRegistry {
     public static Command findCommand(@Nonnull String name) {
         return modules.values().stream()
                 .map(cr -> cr.getCommand(name))
+                .filter(Objects::nonNull)
                 .findAny()
                 .orElse(null);
     }
@@ -94,12 +97,29 @@ public class CommandRegistry {
     }
 
     public enum Module {
-        ADMIN,
-        INFORMATIONAL,
-        CONFIG,
-        MUSIC,
-        MODERATION,
-        UTILITY,
-        FUN
+
+        //@formatter:off
+        ADMIN         (1 << 0, "moduleAdmin", Emojis.KEY),
+        INFO          (1 << 1, "moduleInfo", Emojis.INFO),
+        CONFIG        (1 << 2, "moduleConfig", Emojis.GEAR),
+        MUSIC         (1 << 3, "moduleMusic", Emojis.MUSIC),
+        MODERATION    (1 << 4, "moduleModeration", Emojis.HAMMER),
+        UTILITY       (1 << 5, "moduleUtility", Emojis.TOOLS),
+        FUN           (1 << 6, "moduleFun", Emojis.DIE),
+        ;
+        //@formatter:on
+
+        public static final long DEFAULT_MODULES = ADMIN.bits | INFO.bits | CONFIG.bits | MUSIC.bits; //15
+
+        public final long bits;
+        public final String translationKey;
+        public final String emoji;
+
+        Module(long bits, String translationKey, String emoji) {
+            this.bits = bits;
+            this.translationKey = translationKey;
+            this.emoji = emoji;
+        }
+
     }
 }

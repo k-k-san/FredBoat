@@ -66,7 +66,7 @@ public class CommandInitializer {
 
 
         // Informational / Debugging / Maintenance - always on
-        CommandRegistry infoModule = new CommandRegistry(CommandRegistry.Module.INFORMATIONAL);
+        CommandRegistry infoModule = new CommandRegistry(CommandRegistry.Module.INFO);
         infoModule.registerCommand(new AudioDebugCommand("adebug"));
         infoModule.registerCommand(new CommandsCommand("commands", "comms", "cmds"));
         infoModule.registerCommand(new DebugCommand("debug"));
@@ -89,6 +89,7 @@ public class CommandInitializer {
         CommandRegistry configModule = new CommandRegistry(CommandRegistry.Module.CONFIG);
         configModule.registerCommand(new ConfigCommand("config", "cfg"));
         configModule.registerCommand(new LanguageCommand("language", "lang"));
+        configModule.registerCommand(new ModulesCommand("modules", "module", "mods"));
         configModule.registerCommand(new PrefixCommand("prefix", "pre"));
         /* Perms */
         configModule.registerCommand(new PermissionsCommand(PermissionLevel.ADMIN, "admin"));
