@@ -26,26 +26,26 @@
 package fredboat.command.info;
 
 import fredboat.command.music.control.*;
-import fredboat.command.music.info.ExportCommand;
-import fredboat.command.music.info.GensokyoRadioCommand;
-import fredboat.command.music.info.ListCommand;
-import fredboat.command.music.info.NowplayingCommand;
+import fredboat.command.music.info.*;
 import fredboat.command.music.seeking.ForwardCommand;
 import fredboat.command.music.seeking.RestartCommand;
 import fredboat.command.music.seeking.RewindCommand;
 import fredboat.command.music.seeking.SeekCommand;
+import fredboat.commandmeta.CommandInitializer;
 import fredboat.commandmeta.CommandRegistry;
 import fredboat.commandmeta.abs.Command;
 import fredboat.commandmeta.abs.CommandContext;
 import fredboat.commandmeta.abs.IInfoCommand;
-import fredboat.commandmeta.abs.IMusicCommand;
 import fredboat.messaging.internal.Context;
 import fredboat.util.Emojis;
 import fredboat.util.TextUtils;
 import net.dv8tion.jda.core.Permission;
 
 import javax.annotation.Nonnull;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class MusicHelpCommand extends Command implements IInfoCommand {
 
@@ -58,64 +58,18 @@ public class MusicHelpCommand extends Command implements IInfoCommand {
         invoke(context);
     }
 
-
     public static void invoke(@Nonnull CommandContext context) {
-        getFormattedCommandHelp(context);
-    }
+        final List<String> musicComms = getSortedMusicComms(context);
 
-    //TODO this does a lot of i18n calls, music comms are static tho (except for the language), so they should be cached per language
-    private static List<String> getMusicComms(Context context) {
-        //aggregate all commands and the aliases they may be called with
-        Map<Class<? extends Command>, List<String>> commandToAliases = new HashMap<>();
-        Set<String> commandsAndAliases = CommandRegistry.getAllRegisteredCommandsAndAliases();
-        for (String commandOrAlias : commandsAndAliases) {
-            Command command = CommandRegistry.findCommand(commandOrAlias);
-
-            List<String> aliases = commandToAliases.get(command.getClass());
-            if (aliases == null) aliases = new ArrayList<>();
-            aliases.add(commandOrAlias);
-            commandToAliases.put(command.getClass(), aliases);
-        }
-
-        //sum up existing music commands & sort them in a presentable way
-        List<Command> sortedComms = new ArrayList<>();
-        for (List<String> as : commandToAliases.values()) {
-            Command c = CommandRegistry.findCommand(as.get(0));
-            if (c instanceof IMusicCommand)
-                sortedComms.add(c);
-        }
-        sortedComms.sort(new MusicCommandsComparator());
-
-        //create help strings for each music command and its main alias
-        List<String> musicComms = new ArrayList<>();
-        for (Command command : sortedComms) {
-
-            String mainAlias = commandToAliases.get(command.getClass()).get(0);
-            mainAlias = CommandRegistry.findCommand(mainAlias).name;
-            String formattedHelp = HelpCommand.getFormattedCommandHelp(context, command, mainAlias);
-            musicComms.add(formattedHelp);
-        }
-
-        return musicComms;
-    }
-
-    private static void getFormattedCommandHelp(CommandContext context) {
-        final List<String> musicComms = getMusicComms(context);
-
-        // Start building string:
-        String out = "< " + context.i18n("helpMusicCommandsHeader") + " >\n";
+        StringBuilder out = new StringBuilder("< " + context.i18n("helpMusicCommandsHeader") + " >\n");
         for (String s : musicComms) {
             if (out.length() + s.length() >= 1990) {
-                sendCommandsHelpInDM(context, out);
-                out = "";
+                context.replyPrivate(TextUtils.asCodeBlock(out.toString(), "md"), null, null);
+                out = new StringBuilder();
             }
-            out += s + "\n";
+            out.append(s).append("\n");
         }
-        sendCommandsHelpInDM(context, out);
-    }
-
-    private static void sendCommandsHelpInDM(CommandContext context, String dmMsg) {
-        context.replyPrivate(TextUtils.asCodeBlock(dmMsg, "md"),
+        context.replyPrivate(TextUtils.asCodeBlock(out.toString(), "md"),
                 success -> context.replyWithName(context.i18n("helpSent")),
                 failure -> {
                     if (context.hasPermissions(Permission.MESSAGE_WRITE)) {
@@ -123,6 +77,28 @@ public class MusicHelpCommand extends Command implements IInfoCommand {
                     }
                 }
         );
+    }
+
+    private static List<String> getSortedMusicComms(Context context) {
+        List<Command> musicCommands = CommandRegistry.getCommandModule(CommandRegistry.Module.MUSIC).getDeduplicatedCommands();
+
+        //dont explicitly show the youtube and soundcloud commands in this list, since they are just castrated versions
+        // of the play command, which is "good enough" for this list
+        musicCommands = musicCommands.stream()
+                .filter(command -> !(command instanceof PlayCommand
+                        && (command.name.equals(CommandInitializer.YOUTUBE_COMM_NAME)
+                        || command.name.equals(CommandInitializer.SOUNDCLOUD_COMM_NAME))))
+                .collect(Collectors.toList());
+
+        musicCommands.sort(new MusicCommandsComparator());
+
+        List<String> musicComms = new ArrayList<>();
+        for (Command command : musicCommands) {
+            String formattedHelp = HelpCommand.getFormattedCommandHelp(context, command, command.name);
+            musicComms.add(formattedHelp);
+        }
+
+        return musicComms;
     }
 
     @Nonnull
@@ -157,6 +133,8 @@ public class MusicHelpCommand extends Command implements IInfoCommand {
                 result = 10150;
             } else if (c instanceof SkipCommand) {
                 result = 10200;
+            } else if (c instanceof VoteSkipCommand) {
+                result = 10225;
             } else if (c instanceof StopCommand) {
                 result = 10250;
             } else if (c instanceof PauseCommand) {
@@ -181,6 +159,8 @@ public class MusicHelpCommand extends Command implements IInfoCommand {
                 result = 10700;
             } else if (c instanceof RestartCommand) {
                 result = 10750;
+            } else if (c instanceof HistoryCommand) {
+                result = 10775;
             } else if (c instanceof ExportCommand) {
                 result = 10800;
             } else if (c instanceof PlaySplitCommand) {
@@ -191,6 +171,8 @@ public class MusicHelpCommand extends Command implements IInfoCommand {
                 result = 10950;
             } else if (c instanceof VolumeCommand) {
                 result = 10970;
+            } else if (c instanceof DestroyCommand) {
+                result = 10985;
             } else {
                 //everything else
                 //newly added commands will land here, just add them to the giant if construct above to assign them a fixed place

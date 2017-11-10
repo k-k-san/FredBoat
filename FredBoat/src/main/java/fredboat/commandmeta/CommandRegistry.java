@@ -30,10 +30,7 @@ import fredboat.util.Emojis;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class CommandRegistry {
@@ -42,6 +39,15 @@ public class CommandRegistry {
 
     public static void registerModule(@Nonnull CommandRegistry registry) {
         modules.put(registry.module, registry);
+    }
+
+    @Nonnull
+    public static CommandRegistry getCommandModule(@Nonnull Module module) {
+        CommandRegistry mod = modules.get(module);
+        if (mod == null) {
+            throw new IllegalStateException("No such module registered: " + module.name());
+        }
+        return mod;
     }
 
     @Nullable
@@ -66,8 +72,8 @@ public class CommandRegistry {
     }
 
 
-    private HashMap<String, Command> registry = new HashMap<>();
-    private final Module module;
+    private Map<String, Command> registry = new LinkedHashMap<>();//linked hash map to keep track of the order
+    public final Module module;
 
     public CommandRegistry(@Nonnull Module module) {
         this.module = module;
@@ -81,6 +87,24 @@ public class CommandRegistry {
             registry.put(alias.toLowerCase(), command);
         }
         command.setModule(this.module);
+    }
+
+    //may contain duplicates, if a command was added additional aliases
+    //ordered by the order they were registered
+    public List<Command> getCommands() {
+        return new ArrayList<>(registry.values());
+    }
+
+    //list of unique commands. unique as in, different names, not necessarily different command classes
+    // see Command#equals for more info
+    public List<Command> getDeduplicatedCommands() {
+        List<Command> result = new ArrayList<>();
+        for (Command c : registry.values()) {
+            if (!result.contains(c)) {
+                result.add(c);
+            }
+        }
+        return result;
     }
 
     @Nonnull

@@ -44,6 +44,11 @@ import java.util.Collections;
 
 public class CommandInitializer {
 
+    //the main alias of some commands are reused across the bot. these constants make sure any changes to them dont break things
+    public static final String YOUTUBE_COMM_NAME = "youtube";
+    public static final String SOUNDCLOUD_COMM_NAME = "soundcloud";
+
+
     public static void initCommands() {
 
         // Administrative Module - always on (as in, essential commands for BOT_ADMINs and BOT_OWNER)
@@ -184,9 +189,9 @@ public class CommandInitializer {
         musicModule.registerCommand(new PlayCommand(Arrays.asList(SearchUtil.SearchProvider.YOUTUBE, SearchUtil.SearchProvider.SOUNDCLOUD),
                 "play", "p"));
         musicModule.registerCommand(new PlayCommand(Collections.singletonList(SearchUtil.SearchProvider.YOUTUBE),
-                "youtube", "yt"));
+                YOUTUBE_COMM_NAME, "yt"));
         musicModule.registerCommand(new PlayCommand(Collections.singletonList(SearchUtil.SearchProvider.SOUNDCLOUD),
-                "soundcloud", "sc"));
+                SOUNDCLOUD_COMM_NAME, "sc"));
         musicModule.registerCommand(new PlaySplitCommand("split"));
         musicModule.registerCommand(new RepeatCommand("repeat", "rep"));
         musicModule.registerCommand(new ReshuffleCommand("reshuffle", "resh"));
