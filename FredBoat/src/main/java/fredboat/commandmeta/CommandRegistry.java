@@ -26,6 +26,7 @@
 package fredboat.commandmeta;
 
 import fredboat.commandmeta.abs.Command;
+import fredboat.messaging.internal.Context;
 import fredboat.util.Emojis;
 
 import javax.annotation.Nonnull;
@@ -128,8 +129,8 @@ public class CommandRegistry {
         INFO          (1 << 1, "moduleInfo", Emojis.INFO),
         CONFIG        (1 << 2, "moduleConfig", Emojis.GEAR),
         MUSIC         (1 << 3, "moduleMusic", Emojis.MUSIC),
-        MODERATION    (1 << 4, "moduleModeration", Emojis.HAMMER),
-        UTILITY       (1 << 5, "moduleUtility", Emojis.TOOLS),
+        MOD           (1 << 4, "moduleModeration", Emojis.HAMMER),
+        UTIL          (1 << 5, "moduleUtility", Emojis.TOOLS),
         FUN           (1 << 6, "moduleFun", Emojis.DIE),
         ;
         //@formatter:on
@@ -146,5 +147,18 @@ public class CommandRegistry {
             this.emoji = emoji;
         }
 
+    }
+
+    @Nullable
+    //attempts to identify the module from the given input. checks for the name of the enum + translated versions
+    public static CommandRegistry.Module whichModule(@Nonnull String input, @Nonnull Context context) {
+        String lowerInput = input.toLowerCase();
+        for (CommandRegistry.Module module : CommandRegistry.Module.values()) {
+            if (lowerInput.contains(module.name().toLowerCase())
+                    || lowerInput.contains(context.i18n(module.translationKey).toLowerCase())) {
+                return module;
+            }
+        }
+        return null;
     }
 }

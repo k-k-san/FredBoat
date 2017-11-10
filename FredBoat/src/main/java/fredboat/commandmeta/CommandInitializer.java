@@ -45,6 +45,11 @@ import java.util.Collections;
 public class CommandInitializer {
 
     //the main alias of some commands are reused across the bot. these constants make sure any changes to them dont break things
+    public static final String MODULES_COMM_NAME = "modules";
+    public static final String HELP_COMM_NAME = "help";
+    public static final String SKIP_COMM_NAME = "skip";
+    public static final String COMMANDS_COMM_NAME = "commands";
+    public static final String MUSICHELP_COMM_NAME = "music";
     public static final String YOUTUBE_COMM_NAME = "youtube";
     public static final String SOUNDCLOUD_COMM_NAME = "soundcloud";
 
@@ -73,14 +78,14 @@ public class CommandInitializer {
         // Informational / Debugging / Maintenance - always on
         CommandRegistry infoModule = new CommandRegistry(CommandRegistry.Module.INFO);
         infoModule.registerCommand(new AudioDebugCommand("adebug"));
-        infoModule.registerCommand(new CommandsCommand("commands", "comms", "cmds"));
+        infoModule.registerCommand(new CommandsCommand(COMMANDS_COMM_NAME, "comms", "cmds"));
         infoModule.registerCommand(new DebugCommand("debug"));
         infoModule.registerCommand(new FuzzyUserSearchCommand("fuzzy"));
         infoModule.registerCommand(new GetIdCommand("getid"));
         infoModule.registerCommand(new GitInfoCommand("gitinfo", "git"));
-        infoModule.registerCommand(new HelpCommand("help", "info"));
+        infoModule.registerCommand(new HelpCommand(HELP_COMM_NAME, "info"));
         infoModule.registerCommand(new InviteCommand("invite"));
-        infoModule.registerCommand(new MusicHelpCommand("music", "musichelp"));
+        infoModule.registerCommand(new MusicHelpCommand(MUSICHELP_COMM_NAME, "musichelp"));
         infoModule.registerCommand(new NodesCommand("nodes"));
         infoModule.registerCommand(new PingCommand("ping"));
         infoModule.registerCommand(new ShardsCommand("shards"));
@@ -103,7 +108,7 @@ public class CommandInitializer {
 
 
         // Moderation Module - Anything related to managing Discord guilds
-        CommandRegistry moderationModule = new CommandRegistry(CommandRegistry.Module.MODERATION);
+        CommandRegistry moderationModule = new CommandRegistry(CommandRegistry.Module.MOD);
         moderationModule.registerCommand(new ClearCommand("clear"));
         moderationModule.registerCommand(new HardbanCommand("hardban", "hb"));
         moderationModule.registerCommand(new KickCommand("kick"));
@@ -111,7 +116,7 @@ public class CommandInitializer {
 
 
         // Utility Module - Like Fun commands but without the fun ¯\_(ツ)_/¯
-        CommandRegistry utilityModule = new CommandRegistry(CommandRegistry.Module.UTILITY);
+        CommandRegistry utilityModule = new CommandRegistry(CommandRegistry.Module.UTIL);
         utilityModule.registerCommand(new AvatarCommand("avatar", "ava"));
         utilityModule.registerCommand(new BrainfuckCommand("brainfuck"));
         utilityModule.registerCommand(new MALCommand("mal"));
@@ -167,7 +172,7 @@ public class CommandInitializer {
         funModule.registerCommand(new TextCommand("/╲/╭( ͡° ͡° ͜ʖ ͡° ͡°)╮/╱\\", "spiderlenny"));
         funModule.registerCommand(new TextCommand("( ͡° ͜ʖ ͡°)", "lenny"));
         funModule.registerCommand(new TextCommand("┬┴┬┴┤ ͜ʖ ͡°) ├┬┴┬┴", "peeking", "peekinglenny", "peek"));
-        funModule.registerCommand(new TextCommand(AsciiArtConstant.MAGICAL_LENNY, "magicallenny", "lennymagical"));
+        funModule.registerCommand(new TextCommand(AsciiArtConstant.MAGICAL_LENNY, "magicallenny", "lennymagical", "magic"));
         funModule.registerCommand(new TextCommand(AsciiArtConstant.EAGLE_OF_LENNY, "eagleoflenny", "eol", "lennyeagle"));
 
         /* Random images / image collections */
@@ -197,7 +202,7 @@ public class CommandInitializer {
         musicModule.registerCommand(new ReshuffleCommand("reshuffle", "resh"));
         musicModule.registerCommand(new SelectCommand("select", buildNumericalSelectAliases("sel")));
         musicModule.registerCommand(new ShuffleCommand("shuffle", "sh", "random"));
-        musicModule.registerCommand(new SkipCommand("skip", "sk", "s"));
+        musicModule.registerCommand(new SkipCommand(SKIP_COMM_NAME, "sk", "s"));
         musicModule.registerCommand(new StopCommand("stop", "st"));
         musicModule.registerCommand(new UnpauseCommand("unpause", "unp", "resume"));
         musicModule.registerCommand(new VolumeCommand("volume", "vol"));

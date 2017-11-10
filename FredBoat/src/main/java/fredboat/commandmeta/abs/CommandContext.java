@@ -27,6 +27,7 @@ package fredboat.commandmeta.abs;
 
 import fredboat.Config;
 import fredboat.command.config.PrefixCommand;
+import fredboat.commandmeta.CommandInitializer;
 import fredboat.commandmeta.CommandRegistry;
 import fredboat.feature.metrics.Metrics;
 import fredboat.messaging.CentralMessaging;
@@ -100,7 +101,7 @@ public class CommandContext extends Context {
                 }
             } else {
                 //hardcoded check for the help command that is always displayed as FredBoat status
-                if (raw.startsWith(Config.CONFIG.getPrefix() + "help")) {
+                if (raw.startsWith(Config.CONFIG.getPrefix() + CommandInitializer.HELP_COMM_NAME)) {
                     Metrics.prefixParsed.labels("default").inc();
                     input = raw.substring(Config.CONFIG.getPrefix().length());
                 } else {

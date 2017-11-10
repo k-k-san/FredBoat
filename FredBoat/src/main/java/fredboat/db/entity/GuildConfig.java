@@ -39,6 +39,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.persistence.*;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -131,6 +132,17 @@ public class GuildConfig implements IEntity, Serializable {
 
     public void disableModule(@Nonnull CommandRegistry.Module module) {
         enabledModuleBits &= ~module.bits;
+    }
+
+    @Nonnull
+    public List<CommandRegistry.Module> getEnabledModules() {
+        List<CommandRegistry.Module> enabledModules = new ArrayList<>();
+        for (CommandRegistry.Module module : CommandRegistry.Module.values()) {
+            if (isModuleEnabled(module)) {
+                enabledModules.add(module);
+            }
+        }
+        return enabledModules;
     }
 
     //check whether the bits of the module are present in the enabled bits

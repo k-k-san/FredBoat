@@ -25,19 +25,26 @@
 
 package fredboat.command.info;
 
-import fredboat.Config;
-import fredboat.command.fun.TextCommand;
-import fredboat.command.fun.img.RemoteFileCommand;
+import fredboat.commandmeta.CommandInitializer;
 import fredboat.commandmeta.CommandRegistry;
-import fredboat.commandmeta.abs.*;
+import fredboat.commandmeta.abs.Command;
+import fredboat.commandmeta.abs.CommandContext;
+import fredboat.commandmeta.abs.IInfoCommand;
+import fredboat.db.EntityReader;
+import fredboat.db.entity.GuildConfig;
+import fredboat.messaging.CentralMessaging;
 import fredboat.messaging.internal.Context;
 import fredboat.perms.PermissionLevel;
 import fredboat.perms.PermsUtil;
 import fredboat.util.TextUtils;
-import net.dv8tion.jda.core.Permission;
+import net.dv8tion.jda.core.EmbedBuilder;
 
 import javax.annotation.Nonnull;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by napster on 22.03.17.
@@ -54,90 +61,94 @@ public class CommandsCommand extends Command implements IInfoCommand {
         super(name, aliases);
     }
 
-    //design inspiration by Weiss Schnee's bot
-    //https://cdn.discordapp.com/attachments/230033957998166016/296356070685671425/unknown.png
+    private static final String ALL = "all";
+
     @Override
     public void onInvoke(@Nonnull CommandContext context) {
 
-        //is this the music boat? shortcut to showing those commands
-        //taking this shortcut we're missing out on showing a few commands to pure music bot users
-        // http://i.imgur.com/511Hb8p.png screenshot from 1st April 2017
-        //bot owner and debug commands (+ ;;music and ;;help) missing + the currently defunct config command
-        //this is currently fine but might change in the future
-        MusicHelpCommand.invoke(context);
-        if (Config.CONFIG.isDevDistribution()) {
-            mainBotHelp(context); //TODO: decide how to do handle this after unification of main and music bot
+        if (!context.hasArguments()) {
+
+            GuildConfig gc = EntityReader.getGuildConfig(context.guild.getId());
+
+            List<CommandRegistry.Module> enabledModules = gc.getEnabledModules();
+            if (!PermsUtil.checkPerms(PermissionLevel.BOT_ADMIN, context.invoker)) {
+                enabledModules.remove(CommandRegistry.Module.ADMIN);//dont show admin commands/modules for non admins
+            }
+
+            String prefixAndCommand = "`" + context.getPrefix() + CommandInitializer.COMMANDS_COMM_NAME;
+            List<String> translatedModuleNames = enabledModules.stream()
+                    .map(module -> context.i18n(module.translationKey))
+                    .collect(Collectors.toList());
+            context.reply(context.i18nFormat("modulesCommands", prefixAndCommand + " <module>`", prefixAndCommand + " " + ALL + "`")
+                    + "\n\n" + context.i18nFormat("musicCommandsPromotion", "`" + context.getPrefix() + CommandInitializer.MUSICHELP_COMM_NAME + "`")
+                    + "\n\n" + context.i18n("modulesEnabledInGuild") + " **" + String.join("**, **", translatedModuleNames) + "**"
+                    + "\n" + context.i18nFormat("commandsModulesHint", "`" + context.getPrefix() + CommandInitializer.MODULES_COMM_NAME + "`"));
+            return;
         }
-    }
 
-    private void mainBotHelp(CommandContext context) {
-        Set<String> commandsAndAliases = CommandRegistry.getAllRegisteredCommandsAndAliases();
-        Set<String> unsortedAliases = new HashSet<>(); //hash set = only unique commands
-        for (String commandOrAlias : commandsAndAliases) {
-            String mainAlias = CommandRegistry.findCommand(commandOrAlias).name;
-            unsortedAliases.add(mainAlias);
-        }
-        //alphabetical order
-        List<String> sortedAliases = new ArrayList<>(unsortedAliases);
-        Collections.sort(sortedAliases);
-
-        String fun = "**" + context.i18n("commandsFun") + ":** ";
-        String memes = "**" + context.i18n("commandsMemes") + ":**";
-        String util = "**" + context.i18n("commandsUtility") + ":** ";
-        String mod = "**" + context.i18n("commandsModeration") + ":** ";
-        String maint = "**" + context.i18n("commandsMaintenance") + ":** ";
-        String owner = "**" + context.i18n("commandsBotOwner") + ":** ";
-
-        for (String alias : sortedAliases) {
-            Command c = CommandRegistry.findCommand(alias);
-            String formattedAlias = "`" + alias + "` ";
-
-            if (c instanceof ICommandRestricted
-                    && ((ICommandRestricted) c).getMinimumPerms() == PermissionLevel.BOT_OWNER) {
-                owner += formattedAlias;
-            } else if (c instanceof TextCommand || c instanceof RemoteFileCommand) {
-                memes += formattedAlias;
+        List<CommandRegistry.Module> showHelpFor;
+        if (context.rawArgs.toLowerCase().contains(ALL.toLowerCase())) {
+            showHelpFor = new ArrayList<>(Arrays.asList(CommandRegistry.Module.values()));
+            if (!PermsUtil.checkPerms(PermissionLevel.BOT_ADMIN, context.invoker)) {
+                showHelpFor.remove(CommandRegistry.Module.ADMIN);//dont show admin commands/modules for non admins
+            }
+        } else {
+            CommandRegistry.Module module = CommandRegistry.whichModule(context.rawArgs, context);
+            if (module == null) {
+                context.reply(context.i18nFormat("moduleCantParse",
+                        "`" + context.getPrefix() + context.command.name) + "`");
+                return;
             } else {
-                //overlap is possible in here, that's ok
-                if (c instanceof IFunCommand) {
-                    fun += formattedAlias;
-                }
-                if (c instanceof IUtilCommand) {
-                    util += formattedAlias;
-                }
-                if (c instanceof IModerationCommand) {
-                    mod += formattedAlias;
-                }
-                if (c instanceof IInfoCommand) {
-                    maint += formattedAlias;
-                }
+                showHelpFor = Collections.singletonList(module);
             }
         }
 
-        String out = fun;
-        out += "\n" + util;
-        out += "\n" + memes;
-
-        if (context.invoker.hasPermission(Permission.MESSAGE_MANAGE)) {
-            out += "\n" + mod;
+        EmbedBuilder eb = CentralMessaging.getColoredEmbedBuilder();
+        for (CommandRegistry.Module module : showHelpFor) {
+            eb = addModuleCommands(eb, context, CommandRegistry.getCommandModule(module));
         }
+        eb.addField("", context.i18nFormat("commandsMoreHelp",
+                "`" + TextUtils.escapeMarkdown(context.getPrefix()) + CommandInitializer.HELP_COMM_NAME + " <command>`"), false);
+        context.reply(eb.build());
+    }
 
-        if (PermsUtil.checkPerms(PermissionLevel.BOT_ADMIN, context.invoker)) {
-            out += "\n" + maint;
+    private EmbedBuilder addModuleCommands(EmbedBuilder embedBuilder, CommandContext context, CommandRegistry module) {
+        List<Command> commands = module.getDeduplicatedCommands();
+
+        String prefix = context.getPrefix();
+
+        if (commands.size() >= 6) {
+            //split the commands into three even columns
+            StringBuilder[] sbs = new StringBuilder[3];
+            sbs[0] = new StringBuilder();
+            sbs[1] = new StringBuilder();
+            sbs[2] = new StringBuilder();
+            int i = 0;
+            for (Command c : commands) {
+                sbs[i++ % 3].append(prefix).append(c.name).append("\n");
+            }
+
+            return embedBuilder
+                    .addField(context.i18n(module.module.translationKey), sbs[0].toString(), true)
+                    .addField("", sbs[1].toString(), true)
+                    .addField("", sbs[2].toString(), true)
+                    ;
+        } else {
+            StringBuilder sb = new StringBuilder();
+            for (Command c : commands) {
+                sb.append(prefix).append(c.name).append("\n");
+            }
+            return embedBuilder
+                    .addField(context.i18n(module.module.translationKey), sb.toString(), true)
+                    .addBlankField(true)
+                    .addBlankField(true)
+                    ;
         }
-
-        if (PermsUtil.checkPerms(PermissionLevel.BOT_OWNER, context.invoker)) {
-            out += "\n" + owner;
-        }
-
-        out += "\n\n" + context.i18nFormat("commandsMoreHelp",
-                "`" + TextUtils.escapeMarkdown(context.getPrefix()) + "help <command>`");
-        context.reply(out);
     }
 
     @Nonnull
     @Override
     public String help(@Nonnull Context context) {
-        return "{0}{1}\n#" + context.i18n("helpCommandsCommand");
+        return "{0}{1} <module> OR {0}{1} " + ALL + "\n#" + context.i18n("helpCommandsCommand");
     }
 }

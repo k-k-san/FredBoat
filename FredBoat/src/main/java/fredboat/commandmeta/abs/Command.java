@@ -53,4 +53,9 @@ public abstract class Command implements ICommand {
     public CommandRegistry.Module getModule() {
         return module;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        return (obj instanceof Command) && ((Command) obj).name.equals(this.name);
+    }
 }

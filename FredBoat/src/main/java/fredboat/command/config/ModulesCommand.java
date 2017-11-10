@@ -26,6 +26,7 @@
 package fredboat.command.config;
 
 import fredboat.command.info.HelpCommand;
+import fredboat.commandmeta.CommandInitializer;
 import fredboat.commandmeta.CommandRegistry;
 import fredboat.commandmeta.abs.Command;
 import fredboat.commandmeta.abs.CommandContext;
@@ -40,7 +41,6 @@ import fredboat.perms.PermsUtil;
 import fredboat.util.Emojis;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.function.Function;
 
 import static fredboat.util.AsciiArtConstant.MAGICAL_LENNY;
@@ -55,6 +55,9 @@ public class ModulesCommand extends Command implements IConfigCommand {
     public ModulesCommand(@Nonnull String name, String... aliases) {
         super(name, aliases);
     }
+
+    private static final String ENABLE = "enable";
+    private static final String DISABLE = "disable";
 
     @Override
     public void onInvoke(@Nonnull CommandContext context) {
@@ -81,10 +84,10 @@ public class ModulesCommand extends Command implements IConfigCommand {
             return;
         }
 
-        CommandRegistry.Module module = whichModule(args, context);
+        CommandRegistry.Module module = CommandRegistry.whichModule(args, context);
         if (module == null) {
             context.reply(context.i18nFormat("moduleCantParse",
-                    PrefixCommand.giefPrefix(context.guild), context.command.name));
+                    context.getPrefix() + context.command.name));
             return;
         } else if (module == CommandRegistry.Module.ADMIN
                 || module == CommandRegistry.Module.INFO
@@ -99,12 +102,14 @@ public class ModulesCommand extends Command implements IConfigCommand {
 
         if (enable) {
             gc.enableModule(module);
-            context.reply(context.i18nFormat("moduleEnable", context.i18n(module.translationKey)));
-            //todo tell users which / how many commands / where to find the enabled commands
-            // rework CommandsCommand for this to show commands by module
+            context.reply(context.i18nFormat("moduleEnable", "**" + context.i18n(module.translationKey) + "**")
+                    + "\n" + context.i18nFormat("moduleShowCommands",
+                    "`" + context.getPrefix() + CommandInitializer.COMMANDS_COMM_NAME
+                            + " " + context.i18n(module.translationKey) + "`")
+            );
         } else {
             gc.disableModule(module);
-            context.reply(context.i18nFormat("moduleDisable", context.i18n(module.translationKey)));
+            context.reply(context.i18nFormat("moduleDisable", "**" + context.i18n(module.translationKey) + "**"));
         }
         EntityWriter.mergeGuildConfig(gc);
     }
@@ -124,28 +129,17 @@ public class ModulesCommand extends Command implements IConfigCommand {
 
         moduleStatus
                 += moduleStatusFormatter.apply(CommandRegistry.Module.MUSIC) + " " + Emojis.LOCK + "\n"
-                + moduleStatusFormatter.apply(CommandRegistry.Module.MODERATION) + "\n"
-                + moduleStatusFormatter.apply(CommandRegistry.Module.UTILITY) + "\n"
+                + moduleStatusFormatter.apply(CommandRegistry.Module.MOD) + "\n"
+                + moduleStatusFormatter.apply(CommandRegistry.Module.UTIL) + "\n"
                 + moduleStatusFormatter.apply(CommandRegistry.Module.FUN) + "\n"
         ;
 
+        String howto = "`" + context.getPrefix() + CommandInitializer.MODULES_COMM_NAME + " " + ENABLE + "/" + DISABLE + " <module>`";
         context.reply(CentralMessaging.getColoredEmbedBuilder()
                 .addField(context.i18n("moduleStatus"), moduleStatus, false)
+                .addField("", context.i18nFormat("modulesHowTo", howto), false)
                 .build()
         );
-    }
-
-    @Nullable
-    //attempts to identify the module from input. checks for the name of the enum + translated versions
-    private static CommandRegistry.Module whichModule(@Nonnull String input, @Nonnull Context context) {
-        String lowerInput = input.toLowerCase();
-        for (CommandRegistry.Module module : CommandRegistry.Module.values()) {
-            if (lowerInput.contains(module.name().toLowerCase())
-                    || lowerInput.contains(context.i18n(module.translationKey).toLowerCase())) {
-                return module;
-            }
-        }
-        return null;
     }
 
     @Nonnull

@@ -33,6 +33,7 @@ import fredboat.command.info.HelpCommand;
 import fredboat.command.info.ShardsCommand;
 import fredboat.command.info.StatsCommand;
 import fredboat.command.music.control.SkipCommand;
+import fredboat.commandmeta.CommandInitializer;
 import fredboat.commandmeta.CommandManager;
 import fredboat.commandmeta.CommandRegistry;
 import fredboat.commandmeta.abs.CommandContext;
@@ -108,7 +109,7 @@ public class EventListenerBoat extends AbstractEventListener {
         //preliminary permission filter to avoid a ton of parsing
         //let messages pass on to parsing that contain "help" since we want to answer help requests even from channels
         // where we can't talk in
-        if (!channel.canTalk() && !event.getMessage().getRawContent().toLowerCase().contains("help")) {
+        if (!channel.canTalk() && !event.getMessage().getRawContent().toLowerCase().contains(CommandInitializer.HELP_COMM_NAME)) {
             return;
         }
 
@@ -170,7 +171,7 @@ public class EventListenerBoat extends AbstractEventListener {
             if (ratelimiterResult.b == SkipCommand.class) { //we can compare classes with == as long as we are using the same classloader (which we are)
                 //add a nice reminder on how to skip more than 1 song
                 out += "\n" + context.i18nFormat("ratelimitedSkipCommand",
-                        "`" + TextUtils.escapeMarkdown(context.getPrefix()) + "skip n-m`");
+                        "`" + TextUtils.escapeMarkdown(context.getPrefix()) + CommandInitializer.SKIP_COMM_NAME + " n-m`");
             }
             context.replyWithMention(out);
         }

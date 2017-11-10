@@ -29,6 +29,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import fredboat.command.config.PrefixCommand;
 import fredboat.command.music.control.SelectCommand;
+import fredboat.commandmeta.CommandInitializer;
 import fredboat.commandmeta.CommandRegistry;
 import fredboat.commandmeta.abs.Command;
 import fredboat.commandmeta.abs.CommandContext;
@@ -92,7 +93,8 @@ public class HelpCommand extends Command implements IInfoCommand {
                     HELP_RECEIVED_RECENTLY.put(userId, true);
                     String out = context.i18n("helpSent");
                     out += "\n" + context.i18nFormat("helpCommandsPromotion",
-                            "`" + TextUtils.escapeMarkdown(context.getPrefix()) + "commands`");
+                            "`" + TextUtils.escapeMarkdown(context.getPrefix())
+                                    + CommandInitializer.COMMANDS_COMM_NAME + "`");
                     if (context.hasPermissions(Permission.MESSAGE_WRITE)) {
                         context.replyWithName(out);
                         PrefixCommand.showPrefix(context, context.getPrefix());
@@ -137,7 +139,8 @@ public class HelpCommand extends Command implements IInfoCommand {
         if (command == null) {
             String out = "`" + TextUtils.escapeMarkdown(context.getPrefix()) + trigger + "`: " + context.i18n("helpUnknownCommand");
             out += "\n" + context.i18nFormat("helpCommandsPromotion",
-                    "`" + TextUtils.escapeMarkdown(context.getPrefix()) + "commands`");
+                    "`" + TextUtils.escapeMarkdown(context.getPrefix())
+                            + CommandInitializer.COMMANDS_COMM_NAME + "`");
             context.replyWithName(out);
             return;
         }
