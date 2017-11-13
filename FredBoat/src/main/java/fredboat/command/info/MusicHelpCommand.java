@@ -49,34 +49,48 @@ import java.util.stream.Collectors;
 
 public class MusicHelpCommand extends Command implements IInfoCommand {
 
+    private static final String HERE = "here";
+
     public MusicHelpCommand(String name, String... aliases) {
         super(name, aliases);
     }
 
     @Override
     public void onInvoke(@Nonnull CommandContext context) {
-        invoke(context);
-    }
 
-    public static void invoke(@Nonnull CommandContext context) {
+        boolean postInDm = true;
+        if (context.rawArgs.toLowerCase().contains(HERE)) {
+            postInDm = false;
+        }
+
         final List<String> musicComms = getSortedMusicComms(context);
 
         StringBuilder out = new StringBuilder("< " + context.i18n("helpMusicCommandsHeader") + " >\n");
         for (String s : musicComms) {
             if (out.length() + s.length() >= 1990) {
-                context.replyPrivate(TextUtils.asCodeBlock(out.toString(), "md"), null, null);
+                String block = TextUtils.asCodeBlock(out.toString(), "md");
+                if (postInDm) {
+                    context.replyPrivate(block, null, null);
+                } else {
+                    context.reply(block);
+                }
                 out = new StringBuilder();
             }
             out.append(s).append("\n");
         }
-        context.replyPrivate(TextUtils.asCodeBlock(out.toString(), "md"),
-                success -> context.replyWithName(context.i18n("helpSent")),
-                failure -> {
-                    if (context.hasPermissions(Permission.MESSAGE_WRITE)) {
-                        context.replyWithName(Emojis.EXCLAMATION + context.i18n("helpDmFailed"));
+        String block = TextUtils.asCodeBlock(out.toString(), "md");
+        if (postInDm) {
+            context.replyPrivate(block,
+                    success -> context.replyWithName(context.i18n("helpSent")),
+                    failure -> {
+                        if (context.hasPermissions(Permission.MESSAGE_WRITE)) {
+                            context.replyWithName(Emojis.EXCLAMATION + context.i18n("helpDmFailed"));
+                        }
                     }
-                }
-        );
+            );
+        } else {
+            context.reply(block);
+        }
     }
 
     private static List<String> getSortedMusicComms(Context context) {
@@ -104,7 +118,7 @@ public class MusicHelpCommand extends Command implements IInfoCommand {
     @Nonnull
     @Override
     public String help(@Nonnull Context context) {
-        return "{0}{1}\n#" + context.i18n("helpMusicHelpCommand");
+        return "{0}{1} OR {0}{1} " + HERE + "\n#" + context.i18n("helpMusicHelpCommand");
     }
 
     /**
