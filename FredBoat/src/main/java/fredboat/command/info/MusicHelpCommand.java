@@ -25,6 +25,7 @@
 
 package fredboat.command.info;
 
+import fredboat.FredBoat;
 import fredboat.command.music.control.*;
 import fredboat.command.music.info.*;
 import fredboat.command.music.seeking.ForwardCommand;
@@ -36,10 +37,14 @@ import fredboat.commandmeta.CommandRegistry;
 import fredboat.commandmeta.abs.Command;
 import fredboat.commandmeta.abs.CommandContext;
 import fredboat.commandmeta.abs.IInfoCommand;
+import fredboat.messaging.CentralMessaging;
 import fredboat.messaging.internal.Context;
+import fredboat.perms.PermissionLevel;
+import fredboat.perms.PermsUtil;
 import fredboat.util.Emojis;
 import fredboat.util.TextUtils;
 import net.dv8tion.jda.core.Permission;
+import net.dv8tion.jda.core.entities.TextChannel;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -50,6 +55,7 @@ import java.util.stream.Collectors;
 public class MusicHelpCommand extends Command implements IInfoCommand {
 
     private static final String HERE = "here";
+    private static final String UPDATE = "update";
 
     public MusicHelpCommand(String name, String... aliases) {
         super(name, aliases);
@@ -58,29 +64,32 @@ public class MusicHelpCommand extends Command implements IInfoCommand {
     @Override
     public void onInvoke(@Nonnull CommandContext context) {
 
+        if (context.args.length > 2 && context.args[0].toLowerCase().contains(UPDATE)) {
+            updateMessage(context);
+            return;
+        }
+
         boolean postInDm = true;
         if (context.rawArgs.toLowerCase().contains(HERE)) {
             postInDm = false;
         }
 
-        final List<String> musicComms = getSortedMusicComms(context);
-
-        StringBuilder out = new StringBuilder("< " + context.i18n("helpMusicCommandsHeader") + " >\n");
-        for (String s : musicComms) {
-            if (out.length() + s.length() >= 1990) {
-                String block = TextUtils.asCodeBlock(out.toString(), "md");
-                if (postInDm) {
-                    context.replyPrivate(block, null, null);
-                } else {
-                    context.reply(block);
-                }
-                out = new StringBuilder();
-            }
-            out.append(s).append("\n");
-        }
-        String block = TextUtils.asCodeBlock(out.toString(), "md");
+        List<String> messages = getMessages(context);
+        String lastOne = "";
         if (postInDm) {
-            context.replyPrivate(block,
+            lastOne = messages.remove(messages.size() - 1);
+        }
+
+        for (String message : messages) {
+            if (postInDm) {
+                context.replyPrivate(message, null, CentralMessaging.NOOP_EXCEPTION_HANDLER);
+            } else {
+                context.reply(message);
+            }
+        }
+
+        if (postInDm) {
+            context.replyPrivate(lastOne,
                     success -> context.replyWithName(context.i18n("helpSent")),
                     failure -> {
                         if (context.hasPermissions(Permission.MESSAGE_WRITE)) {
@@ -88,9 +97,61 @@ public class MusicHelpCommand extends Command implements IInfoCommand {
                         }
                     }
             );
-        } else {
-            context.reply(block);
         }
+    }
+
+    private static void updateMessage(CommandContext context) {
+        //this method is intentionally undocumented cause Napster cba to i18n it as this is intended for FBH mainly
+        if (!PermsUtil.checkPermsWithFeedback(PermissionLevel.ADMIN, context)) {
+            return;
+        }
+        long channelId;
+        long messageId;
+        try {
+            channelId = Long.parseUnsignedLong(context.args[1]);
+            messageId = Long.parseUnsignedLong(context.args[2]);
+        } catch (NumberFormatException e) {
+            context.reply("Could not parse the provided channel and/or message ids.");
+            return;
+        }
+
+        TextChannel fbhMusicCommandsChannel = FredBoat.getTextChannelById(channelId);
+        if (fbhMusicCommandsChannel == null) {
+            context.reply("Could not find the requested channel with id " + channelId);
+            return;
+        }
+        List<String> messages = getMessages(context);
+        if (messages.size() > 1) {
+            context.reply(Emojis.EXCLAMATION + "The music help is longer than one message, only the first one will be edited in.");
+        }
+        CentralMessaging.editMessage(fbhMusicCommandsChannel, messageId,
+                CentralMessaging.from(getMessages(context).get(0)),
+                null,
+                t -> context.reply("Could not find the message with id " + messageId + " or it is not a message that I'm allowed to edit."));
+    }
+
+    //returns the music commands ready to be posted to a channel
+    // may return a list with more than one message if we hit the message size limit which might happen due to long
+    // custom prefixes, or translations that take more letters than the stock english one
+    // stock english commands with stock prefix should always aim to stay in one message
+    // if this won't be possible in the future as more commands get added or regular commands get more complicated and
+    // require longer helps, its is possible to use an embed, which has a much higher character limit (6k vs 2k currently)
+    private static List<String> getMessages(Context context) {
+        final List<String> messages = new ArrayList<>();
+        final List<String> musicComms = getSortedMusicComms(context);
+
+        StringBuilder out = new StringBuilder("< " + context.i18n("helpMusicCommandsHeader") + " >\n");
+        for (String s : musicComms) {
+            if (out.length() + s.length() >= 1990) {
+                String block = TextUtils.asCodeBlock(out.toString(), "md");
+                messages.add(block);
+                out = new StringBuilder();
+            }
+            out.append(s).append("\n");
+        }
+        String block = TextUtils.asCodeBlock(out.toString(), "md");
+        messages.add(block);
+        return messages;
     }
 
     private static List<String> getSortedMusicComms(Context context) {
