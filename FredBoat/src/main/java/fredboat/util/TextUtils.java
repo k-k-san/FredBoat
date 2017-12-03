@@ -25,6 +25,8 @@
 
 package fredboat.util;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Streams;
 import fredboat.Config;
 import fredboat.commandmeta.MessagingException;
 import fredboat.messaging.CentralMessaging;
@@ -33,6 +35,7 @@ import fredboat.util.rest.Http;
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.json.JSONException;
 import org.slf4j.LoggerFactory;
 
@@ -47,12 +50,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class TextUtils {
 
     private static final Pattern TIMESTAMP_PATTERN = Pattern.compile("^(\\d?\\d)(?::([0-5]?\\d))?(?::([0-5]?\\d))?$");
 
     private static final List<Character> markdownChars = Arrays.asList('*', '`', '~', '_');
+
+    public static final Splitter COMMA = Splitter.on(',')
+            .omitEmptyStrings() // 1,,2 doesn't sound right
+            .trimResults();// have it nice and trim
 
     public static final DateTimeFormatter TIME_IN_CENTRAL_EUROPE = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss z")
             .withZone(ZoneId.of("Europe/Copenhagen"));
@@ -289,9 +297,14 @@ public class TextUtils {
      * @return True if it matches, false if empty string or not match.
      */
     public static boolean isSplitSelect(@Nonnull String arg) {
-        String temp = arg.replaceAll(" +", " ");
+        return Streams.stream(COMMA.split(arg))
+                .allMatch(NumberUtils::isDigits);
+    }
 
-        return arg.length() > 0 && temp.matches("(\\d*,*\\s*)*");
+    public static List<Integer> getSplitSelect(@Nonnull String arg) {
+        return Streams.stream(COMMA.split(arg))
+                .map(Integer::valueOf)
+                .collect(Collectors.toList());
     }
     
     public static String getTimeInCentralEurope() {

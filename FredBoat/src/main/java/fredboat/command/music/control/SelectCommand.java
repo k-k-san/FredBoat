@@ -80,14 +80,7 @@ public class SelectCommand extends Command implements IMusicCommand, ICommandRes
             if (StringUtils.isNumeric(commandOptions)) {
                 requestChoices.add(Integer.valueOf(commandOptions));
             } else if (TextUtils.isSplitSelect(sanitizedQuery)) {
-                // Remove all non comma or number characters
-                String[] querySplit = sanitizedQuery.split(",|\\s");
-
-                for (String value : querySplit) {
-                    if (StringUtils.isNumeric(value)) {
-                        requestChoices.add(Integer.valueOf(value));
-                    }
-                }
+                requestChoices.addAll(TextUtils.getSplitSelect(sanitizedQuery));
             }
 
             //Step 2: Use only valid numbers (usually 1-5)
