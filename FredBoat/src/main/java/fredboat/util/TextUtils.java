@@ -47,6 +47,8 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -301,10 +303,10 @@ public class TextUtils {
                 .allMatch(NumberUtils::isDigits);
     }
 
-    public static List<Integer> getSplitSelect(@Nonnull String arg) {
+    public static Collection<Integer> getSplitSelect(@Nonnull String arg) {
         return Streams.stream(COMMA.split(arg))
                 .map(Integer::valueOf)
-                .collect(Collectors.toList());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
     
     public static String getTimeInCentralEurope() {
