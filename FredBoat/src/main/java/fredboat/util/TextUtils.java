@@ -25,6 +25,7 @@
 
 package fredboat.util;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Streams;
 import fredboat.Config;
@@ -60,7 +61,7 @@ public class TextUtils {
 
     private static final List<Character> markdownChars = Arrays.asList('*', '`', '~', '_');
 
-    public static final Splitter COMMA = Splitter.on(',')
+    public static final Splitter COMMA_OR_WHITESPACE = Splitter.onPattern("[,\\s]")
             .omitEmptyStrings() // 1,,2 doesn't sound right
             .trimResults();// have it nice and trim
 
@@ -299,7 +300,7 @@ public class TextUtils {
      * @return whether the string matches
      */
     public static boolean isSplitSelect(@Nonnull String arg) {
-        return Streams.stream(COMMA.split(arg))
+        return Streams.stream(COMMA_OR_WHITESPACE.split(arg))
                 .allMatch(NumberUtils::isDigits);
     }
 
@@ -312,7 +313,7 @@ public class TextUtils {
      * @return the split select
      */
     public static Collection<Integer> getSplitSelect(@Nonnull String arg) {
-        return Streams.stream(COMMA.split(arg))
+        return Streams.stream(COMMA_OR_WHITESPACE.split(arg))
                 .map(Integer::valueOf)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
