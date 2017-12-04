@@ -293,16 +293,24 @@ public class TextUtils {
     }
 
     /**
-     * Helper method to check for string that matches ONLY contain digit(s), comma(s) or space(s).
+     * Helper method to check for string that matches ONLY a comma-separated string of numeric values.
      *
-     * @param arg String of the argument.
-     * @return True if it matches, false if empty string or not match.
+     * @param arg the string to test.
+     * @return whether the string matches
      */
     public static boolean isSplitSelect(@Nonnull String arg) {
         return Streams.stream(COMMA.split(arg))
                 .allMatch(NumberUtils::isDigits);
     }
 
+    /**
+     * Helper method that decodes a split select string, as identified by {@link #isSplitSelect(String)}.
+     *
+     * NOTE: an empty string produces an empty Collection.
+     *
+     * @param arg the string to decode
+     * @return the split select
+     */
     public static Collection<Integer> getSplitSelect(@Nonnull String arg) {
         return Streams.stream(COMMA.split(arg))
                 .map(Integer::valueOf)
