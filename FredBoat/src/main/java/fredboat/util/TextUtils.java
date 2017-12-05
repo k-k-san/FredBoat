@@ -36,6 +36,7 @@ import fredboat.util.rest.Http;
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.json.JSONException;
 import org.slf4j.LoggerFactory;
@@ -51,9 +52,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class TextUtils {
 
@@ -61,7 +64,15 @@ public class TextUtils {
 
     private static final List<Character> markdownChars = Arrays.asList('*', '`', '~', '_');
 
-    public static final Splitter COMMA_OR_WHITESPACE = Splitter.onPattern("[,\\s]")
+    public static final CharMatcher SPLIT_SELECT_SEPARATOR =
+            CharMatcher.whitespace().or(CharMatcher.is(','))
+                    .precomputed();
+
+    public static final CharMatcher SPLIT_SELECT_ALLOWED =
+            SPLIT_SELECT_SEPARATOR.or(CharMatcher.inRange('0', '9'))
+                    .precomputed();
+
+    public static final Splitter COMMA_OR_WHITESPACE = Splitter.on(SPLIT_SELECT_SEPARATOR)
             .omitEmptyStrings() // 1,,2 doesn't sound right
             .trimResults();// have it nice and trim
 
@@ -300,24 +311,42 @@ public class TextUtils {
      * @return whether the string matches
      */
     public static boolean isSplitSelect(@Nonnull String arg) {
-        return Streams.stream(COMMA_OR_WHITESPACE.split(arg))
+        String cleaned = SPLIT_SELECT_ALLOWED.negate().collapseFrom(arg, ' ');
+        int numberOfCollapsed = arg.length() - cleaned.length();
+        if (numberOfCollapsed  >= 5) {
+            // rationale: prefix will be collapsed to 1 char, won't matter that much
+            //            small typos (1q 2 3 4) will be collapsed in place, won't matter that much
+            //            longer strings will be collapsed, words reduced to 1 char
+            //            when enough changes happen, it's not a split select
+            return false;
+        }
+        AtomicBoolean empty = new AtomicBoolean(true);
+        boolean allDigits = splitSelectStream(arg)
+                .peek(__ -> empty.set(false))
                 .allMatch(NumberUtils::isDigits);
+        return !empty.get() && allDigits;
     }
 
     /**
      * Helper method that decodes a split select string, as identified by {@link #isSplitSelect(String)}.
-     *
+     * <p>
      * NOTE: an empty string produces an empty Collection.
      *
      * @param arg the string to decode
      * @return the split select
      */
     public static Collection<Integer> getSplitSelect(@Nonnull String arg) {
-        return Streams.stream(COMMA_OR_WHITESPACE.split(arg))
+        return splitSelectStream(arg)
                 .map(Integer::valueOf)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
     }
-    
+
+    private static Stream<String> splitSelectStream(@Nonnull String arg) {
+        return Streams.stream(COMMA_OR_WHITESPACE.split(arg))
+                .map(SPLIT_SELECT_ALLOWED::retainFrom)
+                .filter(StringUtils::isNotEmpty);
+    }
+
     public static String getTimeInCentralEurope() {
         return asTimeInCentralEurope(System.currentTimeMillis());
     }
