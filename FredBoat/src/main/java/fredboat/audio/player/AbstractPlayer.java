@@ -36,6 +36,7 @@ import com.sedmelluq.discord.lavaplayer.source.soundcloud.SoundCloudAudioSourceM
 import com.sedmelluq.discord.lavaplayer.source.twitch.TwitchStreamAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.vimeo.VimeoAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
+import com.sedmelluq.discord.lavaplayer.source.nico.NicoAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
@@ -138,6 +139,9 @@ public abstract class AbstractPlayer extends AudioEventAdapterWrapped implements
         }
         if (Config.CONFIG.isSpotifyEnabled()) {
             mng.registerSourceManager(new SpotifyPlaylistSourceManager());
+        }
+        if (Config.CONFIG.isNicoEnabled()) {
+            mng.registerSourceManager(new NicoAudioSourceManager(Config.CONFIG.getNicoUser(),Config.CONFIG.getNicoPassword()));
         }
         if (Config.CONFIG.isHttpEnabled()) {
             //add new source managers above the HttpAudio one, because it will either eat your request or throw an exception

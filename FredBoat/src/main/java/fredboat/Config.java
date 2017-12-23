@@ -88,6 +88,7 @@ public class Config {
     private boolean vimeoAudio;
     private boolean mixerAudio;
     private boolean spotifyAudio;
+    private boolean nicoAudio;
     private boolean httpAudio;
 
     // temporary config values todo remove after merging main + music
@@ -101,6 +102,8 @@ public class Config {
     private List<String> googleKeys = new ArrayList<>();
 
     // apis
+    private String nicoUser;
+    private String nicoPassword;
     private String malUser;
     private String malPassword;
     private String imgurClientId;
@@ -197,6 +200,7 @@ public class Config {
             vimeoAudio = (Boolean) config.getOrDefault("enableVimeo", true);
             mixerAudio = (Boolean) config.getOrDefault("enableMixer", true);
             spotifyAudio = (Boolean) config.getOrDefault("enableSpotify", true);
+            nicoAudio = (Boolean) config.getOrDefault("enableNico", true);
             httpAudio = (Boolean) config.getOrDefault("enableHttp", false);
 
             //temp configs
@@ -224,6 +228,9 @@ public class Config {
             }
 
             // apis
+            nicoUser = (String) creds.getOrDefault("nicoUser", "");
+            nicoPassword = (String) creds.getOrDefault("nicoPassword", "");
+
             malUser = (String) creds.getOrDefault("malUser", "");
             malPassword = (String) creds.getOrDefault("malPassword", "");
 
@@ -489,6 +496,10 @@ public class Config {
         return spotifyAudio;
     }
 
+    public boolean isNicoEnabled() {
+        return nicoAudio;
+    }
+
     public boolean isHttpEnabled() {
         return httpAudio;
     }
@@ -515,6 +526,14 @@ public class Config {
             throw new MessagingException("No Youtube API key detected. Please read the documentation of the credentials file on how to obtain one.");
         }
         return googleKeys.get((int) Math.floor(Math.random() * getGoogleKeys().size()));
+    }
+
+    public String getNicoUser() {
+        return nicoUser;
+    }
+
+    public String getNicoPassword() {
+        return nicoPassword;
     }
 
     public String getMalUser() {
