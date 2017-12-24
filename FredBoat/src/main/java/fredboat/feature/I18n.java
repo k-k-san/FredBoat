@@ -49,7 +49,7 @@ public class I18n {
 
     public static void start() {
         LANGS.put("ja_JP", DEFAULT);
-        LANGS.put("en_US", new FredBoatLocale(new Locale("en", "US"), "en_US", "English");
+        LANGS.put("en_US", new FredBoatLocale(new Locale("en", "US"), "en_US", "English"));
         LANGS.put("af_ZA", new FredBoatLocale(new Locale("af", "ZA"), "af_ZA", "Afrikaans"));
         LANGS.put("ar_SA", new FredBoatLocale(new Locale("ar", "SA"), "ar_SA", "ﺔﻴﺐﺮﻌﻠﺍ"));
         LANGS.put("bg_BG", new FredBoatLocale(new Locale("bg", "BG"), "bg_BG", "български език"));
