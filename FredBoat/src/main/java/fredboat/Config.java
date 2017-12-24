@@ -200,7 +200,7 @@ public class Config {
             vimeoAudio = (Boolean) config.getOrDefault("enableVimeo", true);
             mixerAudio = (Boolean) config.getOrDefault("enableMixer", true);
             spotifyAudio = (Boolean) config.getOrDefault("enableSpotify", true);
-            nicoAudio = (Boolean) config.getOrDefault("enableNico", true);
+            nicoAudio = (Boolean) config.getOrDefault("enableNico", false);
             httpAudio = (Boolean) config.getOrDefault("enableHttp", false);
 
             //temp configs
