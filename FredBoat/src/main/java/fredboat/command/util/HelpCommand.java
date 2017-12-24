@@ -179,6 +179,7 @@ public class HelpCommand extends Command implements IUtilCommand {
         String botInvite = context.i18n("helpBotInvite") + "\n<" + BotConstants.botInvite + ">";
         String hangoutInvite = context.i18n("helpHangoutInvite") + "\n" + BotConstants.hangoutInvite;
         String footer = context.i18n("helpNoDmCommands") + "\n" + context.i18n("helpCredits");
-        return docsLocation + "\n\n" + botInvite + "\n\n" + hangoutInvite + "\n\n" + footer;
+        String more = context.i18n("helpMore");
+        return docsLocation + "\n\n" + botInvite + "\n\n" + hangoutInvite + "\n\n" + footer + "\n\n" + more;
     }
 }
