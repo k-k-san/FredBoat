@@ -60,7 +60,7 @@ public class GuildConfig implements IEntity, Serializable {
     private boolean autoResume = false;
 
     @Column(name = "lang", nullable = false)
-    private String lang = "en_US";
+    private String lang = "ja_JP";
 
     //may be null to indicate that there is no custom prefix for this guild
     @Column(name = "prefix", nullable = true, columnDefinition = "text")
