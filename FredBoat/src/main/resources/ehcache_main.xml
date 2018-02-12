@@ -28,7 +28,7 @@
          xsi:noNamespaceSchemaLocation="http://www.ehcache.org/ehcache.xsd" updateCheck="true"
          monitoring="autodetect" dynamicConfig="true" name="MAIN_CACHEMANAGER">
 
-    <diskStore path="java.io.tmpdir/ehcache"/>
+    <diskStore path="java.io.tmpdir/ehcache/fredboat_main"/>
 
     <defaultCache maxEntriesLocalHeap="10000" eternal="false"
                   timeToIdleSeconds="120"
@@ -42,19 +42,35 @@
     </defaultCache>
 
     <cache name="guild_config"
-           maxElementsInMemory="120000"
+           maxEntriesLocalHeap="120000"
            eternal="false"
            timeToIdleSeconds="60"
            timeToLiveSeconds="120">
-        <persistence strategy="localtempswap"/>
+        <persistence strategy="localTempSwap"/>
+    </cache>
+
+    <cache name="guild_data"
+           maxEntriesLocalHeap="120000"
+           eternal="false"
+           timeToIdleSeconds="60"
+           timeToLiveSeconds="120">
+        <persistence strategy="localTempSwap"/>
+    </cache>
+
+    <cache name="guild_modules"
+           maxEntriesLocalHeap="120000"
+           eternal="false"
+           timeToIdleSeconds="60"
+           timeToLiveSeconds="120">
+        <persistence strategy="localTempSwap"/>
     </cache>
 
     <cache name="guild_permissions"
-           maxElementsInMemory="120000"
+           maxEntriesLocalHeap="120000"
            eternal="false"
            timeToIdleSeconds="60"
            timeToLiveSeconds="120">
-        <persistence strategy="localtempswap"/>
+        <persistence strategy="localTempSwap"/>
     </cache>
 
     <cache name="org.hibernate.cache.internal.StandardQueryCache"

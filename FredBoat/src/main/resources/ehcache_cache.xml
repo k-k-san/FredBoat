@@ -28,7 +28,7 @@
          xsi:noNamespaceSchemaLocation="http://www.ehcache.org/ehcache.xsd" updateCheck="true"
          monitoring="autodetect" dynamicConfig="true" name="CACHE_CACHEMANAGER">
 
-    <diskStore path="java.io.tmpdir/ehcache"/>
+    <diskStore path="java.io.tmpdir/ehcache/fredboat_cache"/>
 
     <defaultCache maxEntriesLocalHeap="10000" eternal="false"
                   timeToIdleSeconds="120"
@@ -42,10 +42,10 @@
     </defaultCache>
 
     <cache name="search_results"
-           maxElementsInMemory="1000"
+           maxEntriesLocalHeap="1000"
            maxEntriesLocalDisk="100000"
            eternal="true">
-        <persistence strategy="localtempswap"/>
+        <persistence strategy="localTempSwap"/>
     </cache>
 
     <cache name="org.hibernate.cache.internal.StandardQueryCache"

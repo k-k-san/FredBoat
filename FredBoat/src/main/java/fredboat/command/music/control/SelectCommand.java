@@ -26,7 +26,7 @@
 package fredboat.command.music.control;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import fredboat.FredBoat;
+import fredboat.main.BotController;
 import fredboat.audio.player.GuildPlayer;
 import fredboat.audio.player.PlayerRegistry;
 import fredboat.audio.player.VideoSelection;
@@ -107,7 +107,8 @@ public class SelectCommand extends Command implements IMusicCommand, ICommandRes
                 for (int i = 0; i < validChoices.size(); i++) {
                     selectedTracks[i] = selection.choices.get(validChoices.get(i) - 1);
 
-                    String msg = context.i18nFormat("selectSuccess", validChoices.get(i), selectedTracks[i].getInfo().title,
+                    String msg = context.i18nFormat("selectSuccess", validChoices.get(i),
+                            TextUtils.escapeAndDefuse(selectedTracks[i].getInfo().title),
                             TextUtils.formatTime(selectedTracks[0].getInfo().length));
                     if (i < validChoices.size()) {
                         outputMsgBuilder.append("\n");
@@ -118,7 +119,7 @@ public class SelectCommand extends Command implements IMusicCommand, ICommandRes
                 }
 
                 VideoSelection.remove(invoker);
-                TextChannel tc = FredBoat.getTextChannelById(selection.channelId);
+                TextChannel tc = BotController.INS.getShardManager().getTextChannelById(selection.channelId);
                 if (tc != null) {
                     CentralMessaging.editMessage(tc, selection.outMsgId, CentralMessaging.from(outputMsgBuilder.toString()));
                 }

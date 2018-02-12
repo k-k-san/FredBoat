@@ -25,32 +25,23 @@
 
 package fredboat.db.entity.main;
 
-import fredboat.FredBoat;
-import fredboat.db.DatabaseNotReadyException;
-import fredboat.db.entity.IEntity;
+import net.dv8tion.jda.core.entities.Guild;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import space.npstr.sqlsauce.DatabaseException;
+import space.npstr.sqlsauce.entities.SaucedEntity;
+import space.npstr.sqlsauce.fp.types.EntityKey;
 
-import javax.annotation.Nullable;
+import javax.annotation.Nonnull;
 import javax.persistence.*;
-import java.io.Serializable;
-import java.util.List;
-import java.util.Optional;
 
 @Entity
 @Table(name = "guild_config")
 @Cacheable
 @Cache(usage= CacheConcurrencyStrategy.NONSTRICT_READ_WRITE, region="guild_config")
-public class GuildConfig implements IEntity, Serializable {
-
-    private static final Logger log = LoggerFactory.getLogger(GuildConfig.class);
-
-    private static final long serialVersionUID = 5055243002380106205L;
+public class GuildConfig extends SaucedEntity<String, GuildConfig> {
 
     @Id
+    @Column(name = "guildid", nullable = false)
     private String guildId;
 
     @Column(name = "track_announce", nullable = false)
@@ -62,122 +53,66 @@ public class GuildConfig implements IEntity, Serializable {
     @Column(name = "lang", nullable = false)
     private String lang = "ja_JP";
 
-    //may be null to indicate that there is no custom prefix for this guild
-    @Column(name = "prefix", nullable = true, columnDefinition = "text")
-    private String prefix;
-
-    public GuildConfig(String id) {
-        this.guildId = id;
-    }
-
-    @Override
-    public void setId(String id) {
-        this.guildId = id;
-    }
-
+    //for jpa / db wrapper
     public GuildConfig() {
     }
 
-    public String getGuildId() {
-        return guildId;
+    @Nonnull
+    public static EntityKey<String, GuildConfig> key(@Nonnull String guildId) {
+        return EntityKey.of(guildId, GuildConfig.class);
+    }
+
+    @Nonnull
+    public static EntityKey<String, GuildConfig> key(long guildId) {
+        return key(Long.toString(guildId));
+    }
+
+    @Nonnull
+    public static EntityKey<String, GuildConfig> key(@Nonnull Guild guild) {
+        return key(guild.getId());
+    }
+
+    @Nonnull
+    @Override
+    public GuildConfig setId(@Nonnull String id) {
+        this.guildId = id;
+        return this;
+    }
+
+    @Nonnull
+    @Override
+    public String getId() {
+        return this.guildId;
     }
 
     public boolean isTrackAnnounce() {
         return trackAnnounce;
     }
 
-    public void setTrackAnnounce(boolean trackAnnounce) {
+    @Nonnull
+    public GuildConfig setTrackAnnounce(boolean trackAnnounce) {
         this.trackAnnounce = trackAnnounce;
+        return this;
     }
 
     public boolean isAutoResume() {
         return autoResume;
     }
 
-    public void setAutoResume(boolean autoplay) {
+    @Nonnull
+    public GuildConfig setAutoResume(boolean autoplay) {
         this.autoResume = autoplay;
+        return this;
     }
 
     public String getLang() {
         return lang;
     }
 
-    public void setLang(String lang) {
+    @Nonnull
+    public GuildConfig setLang(String lang) {
         this.lang = lang;
+        return this;
     }
 
-    @Nullable
-    public String getPrefix() {
-        return this.prefix;
-    }
-
-    public void setPrefix(@Nullable String prefix) {
-        this.prefix = prefix;
-    }
-
-    /*@OneToMany
-    @JoinColumn(name = "guildconfig")
-    private Set<TCConfig> textChannels;
-
-    public GuildConfig(Guild guild) {
-        this.guildId = Long.parseLong(guild.getId());
-
-        textChannels = new CopyOnWriteArraySet<>();
-
-        for (TextChannel tc : guild.getTextChannels()) {
-            TCConfig tcc = new TCConfig(this, tc);
-            textChannels.add(tcc);
-        }
-
-        for (TCConfig tcc : textChannels) {
-            DatabaseManager.getEntityManager().persist(tcc);
-        }
-    }
-
-    public Set<TCConfig> getTextChannels() {
-        return textChannels;
-    }
-
-    public void addTextChannel(TCConfig tcc){
-        textChannels.add(tcc);
-    }
-
-    public void removeTextChannel(TCConfig tcc){
-        textChannels.remove(tcc);
-    }
-
-    public long getGuildId() {
-        return guildId;
-    }
-    */
-
-    //shortcut to load the prefix without fetching the whole entity because the prefix will be needed rather often
-    // without the rest of the guildconfig information
-    @Nullable
-    public static Optional<String> getPrefix(long guildId) {
-        log.debug("loading prefix for guild {}", guildId);
-        //language=JPAQL
-        String query = "SELECT gf.prefix FROM GuildConfig gf WHERE gf.guildId = :guildId";
-        EntityManager em = null;
-        try {
-            em = FredBoat.getMainDbConnection().getEntityManager();
-            em.getTransaction().begin();
-            List<String> result = em.createQuery(query, String.class)
-                    .setParameter("guildId", Long.toString(guildId))
-                    .getResultList();
-            em.getTransaction().commit();
-            if (result.isEmpty()) {
-                return Optional.empty();
-            } else {
-                return Optional.ofNullable(result.get(0));
-            }
-        } catch (DatabaseException | PersistenceException e) {
-            log.error("Failed to load prefix for guild {}", guildId, e);
-            throw new DatabaseNotReadyException(e);
-        } finally {
-            if (em != null) {
-                em.close();
-            }
-        }
-    }
 }

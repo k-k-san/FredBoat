@@ -26,16 +26,22 @@
 package fredboat.db;
 
 import com.zaxxer.hikari.HikariConfig;
-import fredboat.Config;
+import fredboat.main.Config;
 import fredboat.feature.metrics.Metrics;
+import fredboat.shared.constant.BotConstants;
+import fredboat.util.DiscordUtil;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.config.CacheConfiguration;
 import net.sf.ehcache.config.PersistenceConfiguration;
+import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.MigrationVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import space.npstr.sqlsauce.DatabaseConnection;
 import space.npstr.sqlsauce.DatabaseException;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Properties;
 
 public class DatabaseManager {
@@ -45,8 +51,15 @@ public class DatabaseManager {
     private static final String MAIN_PERSISTENCE_UNIT_NAME = "fredboat.main";
     private static final String CACHE_PERSISTENCE_UNIT_NAME = "fredboat.cache";
 
+    @Nonnull
     public static DatabaseConnection main() throws DatabaseException {
-        String jdbc = Config.CONFIG.getJdbcUrl();
+        String jdbc = Config.CONFIG.getMainJdbcUrl();
+
+        Flyway flyway = new Flyway();
+        flyway.setBaselineOnMigrate(true);
+        flyway.setBaselineVersion(MigrationVersion.fromVersion("0"));
+        flyway.setBaselineDescription("Base Migration");
+        flyway.setLocations("classpath:fredboat/db/migrations/main");
 
         HikariConfig hikariConfig = DatabaseConnection.Builder.getDefaultHikariConfig();
         hikariConfig.setMaximumPoolSize(Config.CONFIG.getHikariPoolSize());
@@ -57,6 +70,14 @@ public class DatabaseManager {
         hibernateProps.put("net.sf.ehcache.configurationResourceName", "/ehcache_main.xml");
         hibernateProps.put("hibernate.cache.provider_configuration_file_resource_path", "ehcache_main.xml");
         hibernateProps.put("hibernate.cache.region.factory_class", "org.hibernate.cache.ehcache.EhCacheRegionFactory");
+        //we use flyway db now for migrations, hibernate shall only run validations
+        hibernateProps.put("hibernate.hbm2ddl.auto", "validate");
+
+        //dont run migrations or validate the db from the patron bot
+        if (DiscordUtil.getBotId() == BotConstants.PATRON_BOT_ID) {
+            flyway = null;
+            hibernateProps.put("hibernate.hbm2ddl.auto", "none");
+        }
 
         DatabaseConnection databaseConnection = new DatabaseConnection.Builder(MAIN_PERSISTENCE_UNIT_NAME, jdbc)
                 .setHikariConfig(hikariConfig)
@@ -67,7 +88,8 @@ public class DatabaseManager {
                 .setSshDetails(Config.CONFIG.getMainSshTunnelConfig())
                 .setHikariStats(Metrics.instance().hikariStats)
                 .setHibernateStats(Metrics.instance().hibernateStats)
-                .setCheckConnection(false)
+                .setCheckConnection(false) //we run our own connection check for this with the DBConnectionWatchdogAgent
+                .setFlyway(flyway)
                 .build();
 
         //adjusting the ehcache config
@@ -85,8 +107,18 @@ public class DatabaseManager {
     }
 
 
+    @Nullable //may return null of no cache db has been configured
     public static DatabaseConnection cache() throws DatabaseException {
         String cacheJdbc = Config.CONFIG.getCacheJdbcUrl();
+        if (cacheJdbc == null) {
+            return null;
+        }
+
+        Flyway flyway = new Flyway();
+        flyway.setBaselineOnMigrate(true);
+        flyway.setBaselineVersion(MigrationVersion.fromVersion("0"));
+        flyway.setBaselineDescription("Base Migration");
+        flyway.setLocations("classpath:fredboat/db/migrations/cache");
 
         HikariConfig hikariConfig = DatabaseConnection.Builder.getDefaultHikariConfig();
         hikariConfig.setMaximumPoolSize(Config.CONFIG.getHikariPoolSize());
@@ -97,7 +129,14 @@ public class DatabaseManager {
         hibernateProps.put("net.sf.ehcache.configurationResourceName", "/ehcache_cache.xml");
         hibernateProps.put("hibernate.cache.provider_configuration_file_resource_path", "ehcache_cache.xml");
         hibernateProps.put("hibernate.cache.region.factory_class", "org.hibernate.cache.ehcache.EhCacheRegionFactory");
+        //we use flyway db now for migrations, hibernate shall only run validations
+        hibernateProps.put("hibernate.hbm2ddl.auto", "validate");
 
+        //dont run migrations or validate the db from the patron bot
+        if (DiscordUtil.getBotId() == BotConstants.PATRON_BOT_ID) {
+            flyway = null;
+            hibernateProps.put("hibernate.hbm2ddl.auto", "none");
+        }
 
         DatabaseConnection databaseConnection = new DatabaseConnection.Builder(CACHE_PERSISTENCE_UNIT_NAME, cacheJdbc)
                 .setHikariConfig(hikariConfig)
@@ -108,6 +147,7 @@ public class DatabaseManager {
                 .setSshDetails(Config.CONFIG.getCacheSshTunnelConfig())
                 .setHikariStats(Metrics.instance().hikariStats)
                 .setHibernateStats(Metrics.instance().hibernateStats)
+                .setFlyway(flyway)
                 .build();
 
         //adjusting the ehcache config
