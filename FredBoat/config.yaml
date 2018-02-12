@@ -16,6 +16,7 @@ enableTwitch:      true        # Set to true to enable playing Twitch links
 enableVimeo:       true        # Set to true to enable playing Vimeo links
 enableMixer:       true        # Set to true to enable playing Mixer links
 enableSpotify:     true        # Set to true to enable playing Spotify links
+<<<<<<< HEAD
 enableNico:        false       # Set to true to enable playing Nico links (if true, you must fill email&pass in credentials.yaml)
 enableHttp:        true        # Set to true to enable playing direct links
 
