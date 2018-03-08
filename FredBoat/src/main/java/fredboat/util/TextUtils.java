@@ -29,10 +29,10 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Streams;
 import fredboat.commandmeta.MessagingException;
-import fredboat.main.Config;
+import fredboat.main.BotController;
+import fredboat.main.Launcher;
 import fredboat.messaging.CentralMessaging;
 import fredboat.messaging.internal.Context;
-import fredboat.util.rest.Http;
 import net.dv8tion.jda.core.MessageBuilder;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.Message;
@@ -129,7 +129,7 @@ public class TextUtils {
         }
 
         String filtered = context.i18nFormat("utilErrorOccurred", e.toString());
-        for (String str : Config.CONFIG.getGoogleKeys()) {
+        for (String str : Launcher.getBotController().getCredentials().getGoogleKeys()) {
             filtered = filtered.replace(str, "GOOGLE_SERVER_KEY");
         }
         builder.append(filtered);
@@ -156,13 +156,13 @@ public class TextUtils {
     }
 
     private static String postToHastebin(String body) throws IOException {
-        return Http.post("https://hastebin.com/documents", body, "text/plain")
+        return BotController.HTTP.post("https://hastebin.com/documents", body, "text/plain")
                 .asJson()
                 .getString("key");
     }
 
     private static String postToWastebin(String body) throws IOException {
-        return Http.post("https://wastebin.party/documents", body, "text/plain")
+        return BotController.HTTP.post("https://wastebin.party/documents", body, "text/plain")
                 .asJson()
                 .getString("key");
     }
@@ -327,7 +327,7 @@ public class TextUtils {
     public static boolean isSplitSelect(@Nonnull String arg) {
         String cleaned = SPLIT_SELECT_ALLOWED.negate().collapseFrom(arg, ' ');
         int numberOfCollapsed = arg.length() - cleaned.length();
-        if (numberOfCollapsed  >= 5) {
+        if (numberOfCollapsed  >= 2) {
             // rationale: prefix will be collapsed to 1 char, won't matter that much
             //            small typos (1q 2 3 4) will be collapsed in place, won't matter that much
             //            longer strings will be collapsed, words reduced to 1 char
@@ -391,20 +391,38 @@ public class TextUtils {
         return shortened.toString();
     }
 
-    //put a zero width space between any @ and "here" and "everyone" in the input string
-    @Nonnull
-    public static String defuseMentions(@Nonnull String input) {
-        return input.replaceAll("@here", "@" + ZERO_WIDTH_CHAR + "here")
-                .replaceAll("@everyone", "@" + ZERO_WIDTH_CHAR + "everyone");
-    }
-
     /**
-     * @return the input, with escaped markdown and defused mentions
+     * @return the input, with escaped markdown and defused mentions and URLs
      * It is a good idea to use this on any user generated values that we reply in plain text.
      */
     @Nonnull
     public static String escapeAndDefuse(@Nonnull String input) {
-        return defuseMentions(escapeMarkdown(input));
+        return defuse(escapeMarkdown(input));
+    }
+
+    /**
+     * Defuses some content that Discord couldn't know wasn't our intention.
+     *
+     * <p>When the nickname contains a link, or a mention, the bot uses that as-is in the text.
+     * Since Discord can't know the bot didn't mean to do that, we escape it so it will not be interpreted.</p>
+     *
+     * @param input the string to escape, e.g. track titles, nicknames, supplied values
+     * @return defused content
+     */
+    @Nonnull
+    public static String defuse(@Nonnull String input) {
+        return defuseUrls(defuseMentions(input));
+    }
+
+    @Nonnull
+    private static String defuseMentions(@Nonnull String input) {
+        return input.replaceAll("@here", "@" + ZERO_WIDTH_CHAR + "here")
+                .replaceAll("@everyone", "@" + ZERO_WIDTH_CHAR + "everyone");
+    }
+
+    @Nonnull
+    private static String defuseUrls(@Nonnull String input) {
+        return input.replaceAll("://", ":" + ZERO_WIDTH_CHAR + "//");
     }
 
     @Nonnull

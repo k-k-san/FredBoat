@@ -27,7 +27,7 @@ package fredboat.command.util;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import fredboat.command.moderation.PrefixCommand;
+import fredboat.command.config.PrefixCommand;
 import fredboat.command.music.control.SelectCommand;
 import fredboat.commandmeta.CommandRegistry;
 import fredboat.commandmeta.abs.Command;
@@ -36,7 +36,7 @@ import fredboat.commandmeta.abs.ICommandRestricted;
 import fredboat.commandmeta.abs.IUtilCommand;
 import fredboat.messaging.CentralMessaging;
 import fredboat.messaging.internal.Context;
-import fredboat.perms.PermissionLevel;
+import fredboat.perms.PermsUtil;
 import fredboat.shared.constant.BotConstants;
 import fredboat.util.Emojis;
 import fredboat.util.TextUtils;

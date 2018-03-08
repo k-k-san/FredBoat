@@ -1,0 +1,17 @@
+description = 'FredBoat database'
+version '1.0'
+ext {
+    moduleName = 'Database'
+}
+dependencies {
+    compile project(':Shared')
+
+    compile group: 'net.dv8tion', name: 'JDA', version: jdaVersion
+    compile group: 'com.sedmelluq', name: 'lavaplayer', version: lavaplayerVersion
+
+    compile group: 'space.npstr.SqlSauce', name: 'sqlsauce-core', version: sqlsauceVersion
+    compile group: 'space.npstr.SqlSauce', name: 'discord-entities', version: sqlsauceVersion
+    compile group: 'org.hibernate', name: 'hibernate-ehcache', version: hibernateVersion
+    compile group: 'org.flywaydb', name: 'flyway-core', version: flywayVersion
+    compile group: 'net.ttddyy', name: 'datasource-proxy', version: dsProxyVersion
+}
