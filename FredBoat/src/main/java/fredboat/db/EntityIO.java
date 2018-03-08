@@ -1,7 +1,8 @@
 /*
+ *
  * MIT License
  *
- * Copyright (c) 2017 Frederik Ar. Mikkelsen
+ * Copyright (c) 2017-2018 Frederik Ar. Mikkelsen
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -20,27 +21,22 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
- *
  */
 
 package fredboat.db;
 
+import fredboat.config.property.PropertyConfigProvider;
 import fredboat.db.api.*;
 import fredboat.db.entity.cache.SearchResult;
 import fredboat.db.entity.main.*;
 import fredboat.db.repositories.api.*;
-import fredboat.db.repositories.impl.*;
 import fredboat.util.DiscordUtil;
 import fredboat.util.func.NonnullSupplier;
 import net.dv8tion.jda.core.entities.Guild;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import space.npstr.annotations.FieldsAreNonNullByDefault;
-import space.npstr.annotations.ParametersAreNonnullByDefault;
-import space.npstr.annotations.ReturnTypesAreNonNullByDefault;
-import space.npstr.sqlsauce.DatabaseConnection;
+import org.springframework.stereotype.Component;
 import space.npstr.sqlsauce.DatabaseException;
-import space.npstr.sqlsauce.DatabaseWrapper;
 import space.npstr.sqlsauce.entities.GuildBotComposite;
 
 import javax.annotation.Nullable;
@@ -54,40 +50,35 @@ import java.util.function.Supplier;
  * to commonly used methods to read and write entities, as well as transform them.
  */
 @SuppressWarnings("UnusedReturnValue")
-@FieldsAreNonNullByDefault
-@ParametersAreNonnullByDefault
-@ReturnTypesAreNonNullByDefault
-public class EntityIO implements IBlacklistIO, IGuildConfigIO, IGuildDataIO, IGuildModulesIO, IGuildPermsIO, IPrefixIO,
-        ISearchResultIO {
+@Component
+public class EntityIO implements BlacklistIO, GuildConfigIO, GuildDataIO, GuildModulesIO, GuildPermsIO, PrefixIO,
+        SearchResultIO {
 
     private static final Logger log = LoggerFactory.getLogger(EntityIO.class);
 
-    private final IGuildConfigRepo guildConfigRepo;
-    private final IGuildDataRepo guildDataRepo;
-    private final IGuildModulesRepo guildModulesRepo;
-    private final IGuildPermsRepo guildPermsRepo;
-    private final IPrefixRepo prefixRepo;
-    private final IBlacklistRepo blacklistRepo;
+    private final PropertyConfigProvider configProvider;
+
+    private final GuildConfigRepo guildConfigRepo;
+    private final GuildDataRepo guildDataRepo;
+    private final GuildModulesRepo guildModulesRepo;
+    private final GuildPermsRepo guildPermsRepo;
+    private final PrefixRepo prefixRepo;
+    private final BlacklistRepo blacklistRepo;
 
     @Nullable
-    private final ISearchResultRepo searchResultRepo;
+    private final SearchResultRepo searchResultRepo;
 
-    public EntityIO(DatabaseConnection main, @Nullable DatabaseConnection cache) {
-        DatabaseWrapper mainWrapper = new DatabaseWrapper(main);
-        DatabaseWrapper cacheWrapper = cache != null ? new DatabaseWrapper(cache) : null;
-
-        guildConfigRepo = new SqlSauceGuildConfigRepo(mainWrapper);
-        guildDataRepo = new SqlSauceGuildDataRepo(mainWrapper);
-        guildModulesRepo = new SqlSauceGuildModulesRepo(mainWrapper);
-        guildPermsRepo = new SqlSauceGuildPermsRepo(mainWrapper);
-        prefixRepo = new SqlSaucePrefixRepo(mainWrapper);
-        blacklistRepo = new SqlSauceBlacklistRepo(mainWrapper);
-
-        if (cacheWrapper != null) {
-            searchResultRepo = new SqlSauceSearchResultRepo(cacheWrapper);
-        } else {
-            searchResultRepo = null; //todo noop repo for cache entities?
-        }
+    public EntityIO(PropertyConfigProvider configProvider, BlacklistRepo blacklistRepo, GuildConfigRepo guildConfigRepo,
+                    GuildDataRepo guildDataRepo, GuildModulesRepo guildModulesRepo, GuildPermsRepo guildPermsRepo,
+                    PrefixRepo prefixRepo, @Nullable SearchResultRepo searchResultRepo) {
+        this.configProvider = configProvider;
+        this.blacklistRepo = blacklistRepo;
+        this.guildConfigRepo = guildConfigRepo;
+        this.guildDataRepo = guildDataRepo;
+        this.guildModulesRepo = guildModulesRepo;
+        this.guildPermsRepo = guildPermsRepo;
+        this.prefixRepo = prefixRepo;
+        this.searchResultRepo = searchResultRepo;
     }
 
     /**
@@ -213,7 +204,7 @@ public class EntityIO implements IBlacklistIO, IGuildConfigIO, IGuildDataIO, IGu
 
     @Override
     public Prefix transformPrefix(Guild guild, Function<Prefix, Prefix> transformation) {
-        Prefix prefix = fetchUserFriendly(() -> prefixRepo.fetch(new GuildBotComposite(guild, DiscordUtil.getBotId())));
+        Prefix prefix = fetchUserFriendly(() -> prefixRepo.fetch(new GuildBotComposite(guild, DiscordUtil.getBotId(configProvider.getCredentials()))));
         return fetchUserFriendly(() -> prefixRepo.merge(transformation.apply(prefix)));
     }
 

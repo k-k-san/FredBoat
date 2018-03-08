@@ -26,18 +26,7 @@
 package fredboat.audio.player;
 
 import com.google.common.collect.Lists;
-import com.sedmelluq.discord.lavaplayer.player.AudioConfiguration;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
-import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
-import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
-import com.sedmelluq.discord.lavaplayer.source.bandcamp.BandcampAudioSourceManager;
-import com.sedmelluq.discord.lavaplayer.source.beam.BeamAudioSourceManager;
-import com.sedmelluq.discord.lavaplayer.source.local.LocalAudioSourceManager;
-import com.sedmelluq.discord.lavaplayer.source.soundcloud.SoundCloudAudioSourceManager;
-import com.sedmelluq.discord.lavaplayer.source.twitch.TwitchStreamAudioSourceManager;
-import com.sedmelluq.discord.lavaplayer.source.vimeo.VimeoAudioSourceManager;
-import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
-import com.sedmelluq.discord.lavaplayer.source.nico.NicoAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
@@ -47,20 +36,13 @@ import fredboat.audio.queue.AudioTrackContext;
 import fredboat.audio.queue.ITrackProvider;
 import fredboat.audio.queue.SplitAudioTrackContext;
 import fredboat.audio.queue.TrackEndMarkerHandler;
-import fredboat.audio.source.HttpSourceManager;
-import fredboat.audio.source.PlaylistImportSourceManager;
-import fredboat.audio.source.SpotifyPlaylistSourceManager;
 import fredboat.commandmeta.MessagingException;
-import fredboat.main.Config;
-import fredboat.shared.constant.DistributionEnum;
 import fredboat.util.TextUtils;
 import lavalink.client.player.IPlayer;
 import lavalink.client.player.LavalinkPlayer;
 import lavalink.client.player.LavaplayerPlayerWrapper;
 import lavalink.client.player.event.AudioEventAdapterWrapped;
 import net.dv8tion.jda.core.audio.AudioSendHandler;
-import org.apache.http.client.config.CookieSpecs;
-import org.apache.http.client.config.RequestConfig;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
@@ -72,7 +54,6 @@ public abstract class AbstractPlayer extends AudioEventAdapterWrapped implements
 
     private static final org.slf4j.Logger log = LoggerFactory.getLogger(AbstractPlayer.class);
 
-    private static AudioPlayerManager playerManager;
     protected final IPlayer player;
     ITrackProvider audioTrackProvider;
     private AudioFrame lastFrame = null;
@@ -87,80 +68,10 @@ public abstract class AbstractPlayer extends AudioEventAdapterWrapped implements
     private ConcurrentLinkedQueue<AudioTrackContext> historyQueue = new ConcurrentLinkedQueue<>();
 
     @SuppressWarnings("LeakingThisInConstructor")
-    AbstractPlayer(String guildId) {
-        initAudioPlayerManager();
-        player = LavalinkManager.ins.createPlayer(guildId);
+    AbstractPlayer(String guildId, AudioConnectionFacade audioConnectionFacade) {
+        player = audioConnectionFacade.createPlayer(guildId);
 
         player.addListener(this);
-    }
-
-    private static void initAudioPlayerManager() {
-        if (playerManager == null) {
-            playerManager = new DefaultAudioPlayerManager();
-            registerSourceManagers(playerManager);
-
-            //Patrons and development get higher quality
-            AudioConfiguration.ResamplingQuality quality = AudioConfiguration.ResamplingQuality.LOW;
-            if (Config.CONFIG.getDistribution() == DistributionEnum.PATRON || Config.CONFIG.getDistribution() == DistributionEnum.DEVELOPMENT)
-                quality = AudioConfiguration.ResamplingQuality.MEDIUM;
-
-            playerManager.getConfiguration().setResamplingQuality(quality);
-            if (!LavalinkManager.ins.isEnabled()) {
-                playerManager.enableGcMonitoring(); //we are playing tracks locally
-            }
-            playerManager.setFrameBufferDuration(1000);
-            playerManager.setItemLoaderThreadPoolSize(500);
-        }
-    }
-
-    public static YoutubeAudioSourceManager produceYoutubeAudioSourceManager() {
-        YoutubeAudioSourceManager youtubeAudioSourceManager = new YoutubeAudioSourceManager();
-        youtubeAudioSourceManager.configureRequests(config -> RequestConfig.copy(config)
-                .setCookieSpec(CookieSpecs.IGNORE_COOKIES)
-                .build());
-        youtubeAudioSourceManager.setMixLoaderMaximumPoolSize(50);
-        return youtubeAudioSourceManager;
-    }
-
-    public static AudioPlayerManager registerSourceManagers(AudioPlayerManager mng) {
-        mng.registerSourceManager(new PlaylistImportSourceManager());
-        //Determine which Source managers are enabled
-        //By default, all are enabled except LocalAudioSources and HttpAudioSources, see config.yaml and Config class
-        if (Config.CONFIG.isYouTubeEnabled()) {
-            mng.registerSourceManager(produceYoutubeAudioSourceManager());
-        }
-        if (Config.CONFIG.isSoundCloudEnabled()) {
-            mng.registerSourceManager(new SoundCloudAudioSourceManager());
-        }
-        if (Config.CONFIG.isBandCampEnabled()) {
-            mng.registerSourceManager(new BandcampAudioSourceManager());
-        }
-        if (Config.CONFIG.isTwitchEnabled()) {
-            mng.registerSourceManager(new TwitchStreamAudioSourceManager());
-        }
-        if (Config.CONFIG.isVimeoEnabled()) {
-            mng.registerSourceManager(new VimeoAudioSourceManager());
-        }
-        if (Config.CONFIG.isMixerEnabled()) {
-            mng.registerSourceManager(new BeamAudioSourceManager());
-        }
-        if (Config.CONFIG.isSpotifyEnabled()) {
-            mng.registerSourceManager(new SpotifyPlaylistSourceManager());
-        }
-<<<<<<< HEAD
-        if (Config.CONFIG.isNicoEnabled()) {
-            mng.registerSourceManager(new NicoAudioSourceManager(Config.CONFIG.getNicoUser(),Config.CONFIG.getNicoPassword()));
-=======
-        if (Config.CONFIG.isLocalEnabled()) {
-            mng.registerSourceManager(new LocalAudioSourceManager());
->>>>>>> branch 'dev' of https://github.com/Frederikam/FredBoat.git
-        }
-        if (Config.CONFIG.isHttpEnabled()) {
-            //add new source managers above the HttpAudio one, because it will either eat your request or throw an exception
-            //so you will never reach a source manager below it
-            mng.registerSourceManager(new HttpSourceManager());
-        }
-        return mng;
     }
 
     public void play() {
@@ -283,11 +194,6 @@ public abstract class AbstractPlayer extends AudioEventAdapterWrapped implements
 
     public float getVolume() {
         return ((float) player.getVolume()) / 100;
-    }
-
-    public static AudioPlayerManager getPlayerManager() {
-        initAudioPlayerManager();
-        return playerManager;
     }
 
     @Override

@@ -26,11 +26,11 @@
 package fredboat.api;
 
 import fredboat.audio.player.PlayerRegistry;
+import fredboat.feature.metrics.BotMetrics;
 import fredboat.feature.metrics.Metrics;
-import fredboat.main.BotController;
-import fredboat.main.BotMetrics;
-import fredboat.main.Config;
-import net.dv8tion.jda.core.JDA;
+import fredboat.feature.metrics.MetricsServletAdapter;
+import fredboat.jda.ShardProvider;
+import fredboat.main.Launcher;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -47,8 +47,8 @@ public class API {
 
     private API() {}
 
-    public static void start() {
-        if(!Config.CONFIG.isRestServerEnabled()) {
+    public static void start(PlayerRegistry playerRegistry, BotMetrics botMetrics, ShardProvider shardProvider) {
+        if (!Launcher.getBotController().getAppConfig().isRestServerEnabled()) {
             log.warn("Rest server is not enabled. Skipping Spark ignition!");
             return;
         }
@@ -70,7 +70,7 @@ public class API {
             JSONObject root = new JSONObject();
             JSONArray a = new JSONArray();
 
-            for (JDA shard : BotController.INS.getShardManager().getShards()) {
+            shardProvider.streamShards().forEach(shard -> {
                 JSONObject fbStats = new JSONObject();
                 fbStats.put("id", shard.getShardInfo().getShardId())
                         .put("guilds", shard.getGuildCache().size())
@@ -78,14 +78,14 @@ public class API {
                         .put("status", shard.getStatus());
 
                 a.put(fbStats);
-            }
+            });
 
             JSONObject g = new JSONObject();
-            g.put("playingPlayers", PlayerRegistry.getPlayingPlayers().size())
-                    .put("totalPlayers", PlayerRegistry.getRegistry().size())
-                    .put("distribution", Config.CONFIG.getDistribution())
-                    .put("guilds", BotMetrics.getTotalGuildsCount())
-                    .put("users", BotMetrics.getTotalUniqueUsersCount());
+            g.put("playingPlayers", playerRegistry.getPlayingPlayers().size())
+                    .put("totalPlayers", playerRegistry.getRegistry().size())
+                    .put("distribution", Launcher.getBotController().getAppConfig().getDistribution())
+                    .put("guilds", botMetrics.getTotalGuildsCount())
+                    .put("users", botMetrics.getTotalUniqueUsersCount());
 
             root.put("shards", a);
             root.put("global", g);
@@ -103,15 +103,15 @@ public class API {
         });
     }
 
-    public static void turnOnMetrics() {
-        if (!Config.CONFIG.isRestServerEnabled()) {
+    public static void turnOnMetrics(MetricsServletAdapter metricsServlet) {
+        if (!Launcher.getBotController().getAppConfig().isRestServerEnabled()) {
             log.warn("Rest server is not enabled. Skipping Spark ignition!");
             return;
         }
 
         Spark.get("/metrics", (req, resp) -> {
             Metrics.apiServed.labels("/metrics").inc();
-            return Metrics.instance().metricsServlet.servletGet(req.raw(), resp.raw());
+            return metricsServlet.servletGet(req.raw(), resp.raw());
         });
     }
 

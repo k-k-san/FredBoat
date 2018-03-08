@@ -24,6 +24,7 @@
 
 package fredboat.commandmeta;
 
+import fredboat.audio.player.VideoSelectionCache;
 import fredboat.command.admin.*;
 import fredboat.command.config.*;
 import fredboat.command.fun.*;
@@ -40,12 +41,16 @@ import fredboat.command.music.seeking.RestartCommand;
 import fredboat.command.music.seeking.RewindCommand;
 import fredboat.command.music.seeking.SeekCommand;
 import fredboat.command.util.*;
-import fredboat.perms.PermissionLevel;
+import fredboat.definitions.Module;
+import fredboat.definitions.PermissionLevel;
+import fredboat.definitions.SearchProvider;
 import fredboat.shared.constant.BotConstants;
 import fredboat.util.AsciiArtConstant;
-import fredboat.util.rest.OpenWeatherAPI;
-import fredboat.util.rest.SearchUtil;
+import fredboat.util.rest.TrackSearcher;
+import fredboat.util.rest.Weather;
+import io.prometheus.client.guava.cache.CacheMetricsCollector;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -64,10 +69,11 @@ public class CommandInitializer {
     public static final String CONFIG_COMM_NAME = "config";
     public static final String LANGUAGE_COMM_NAME = "language";
 
-    public static void initCommands() {
+    public static void initCommands(@Nullable CacheMetricsCollector cacheMetrics, Weather weather, TrackSearcher trackSearcher,
+                                    VideoSelectionCache videoSelectionCache) {
 
         // Administrative Module - always on (as in, essential commands for BOT_ADMINs and BOT_OWNER)
-        CommandRegistry adminModule = new CommandRegistry(CommandRegistry.Module.ADMIN);
+        CommandRegistry adminModule = new CommandRegistry(Module.ADMIN);
         adminModule.registerCommand(new AnnounceCommand("announce"));
         adminModule.registerCommand(new BotRestartCommand("botrestart"));
         adminModule.registerCommand(new DisableCommandsCommand("disable"));
@@ -87,7 +93,7 @@ public class CommandInitializer {
 
 
         // Informational / Debugging / Maintenance - always on
-        CommandRegistry infoModule = new CommandRegistry(CommandRegistry.Module.INFO);
+        CommandRegistry infoModule = new CommandRegistry(Module.INFO);
         infoModule.registerCommand(new AudioDebugCommand("adebug"));
         infoModule.registerCommand(new CommandsCommand(COMMANDS_COMM_NAME, "comms", "cmds"));
         infoModule.registerCommand(new DebugCommand("debug"));
@@ -107,11 +113,11 @@ public class CommandInitializer {
 
 
         // Configurational stuff - always on
-        CommandRegistry configModule = new CommandRegistry(CommandRegistry.Module.CONFIG);
+        CommandRegistry configModule = new CommandRegistry(Module.CONFIG);
         configModule.registerCommand(new ConfigCommand(CONFIG_COMM_NAME, "cfg"));
         configModule.registerCommand(new LanguageCommand(LANGUAGE_COMM_NAME, "lang"));
         configModule.registerCommand(new ModulesCommand("modules", "module", "mods"));
-        configModule.registerCommand(new PrefixCommand(PREFIX_COMM_NAME, "pre"));
+        configModule.registerCommand(new PrefixCommand(cacheMetrics, PREFIX_COMM_NAME, "pre"));
         /* Perms */
         configModule.registerCommand(new PermissionsCommand(PermissionLevel.ADMIN, "admin", "admins"));
         configModule.registerCommand(new PermissionsCommand(PermissionLevel.DJ, "dj", "djs"));
@@ -119,7 +125,7 @@ public class CommandInitializer {
 
 
         // Moderation Module - Anything related to managing Discord guilds
-        CommandRegistry moderationModule = new CommandRegistry(CommandRegistry.Module.MOD);
+        CommandRegistry moderationModule = new CommandRegistry(Module.MOD);
         moderationModule.registerCommand(new ClearCommand("clear"));
         moderationModule.registerCommand(new HardbanCommand("hardban", "hb"));
         moderationModule.registerCommand(new KickCommand("kick"));
@@ -127,7 +133,7 @@ public class CommandInitializer {
 
 
         // Utility Module - Like Fun commands but without the fun ¯\_(ツ)_/¯
-        CommandRegistry utilityModule = new CommandRegistry(CommandRegistry.Module.UTIL);
+        CommandRegistry utilityModule = new CommandRegistry(Module.UTIL);
         utilityModule.registerCommand(new AvatarCommand("avatar", "ava"));
         utilityModule.registerCommand(new BrainfuckCommand("brainfuck"));
         utilityModule.registerCommand(new MALCommand("mal"));
@@ -135,13 +141,13 @@ public class CommandInitializer {
         utilityModule.registerCommand(new RoleInfoCommand("roleinfo"));
         utilityModule.registerCommand(new ServerInfoCommand("serverinfo", "guildinfo"));
         utilityModule.registerCommand(new UserInfoCommand("userinfo", "memberinfo"));
-        utilityModule.registerCommand(new WeatherCommand(new OpenWeatherAPI(), "weather"));
+        utilityModule.registerCommand(new WeatherCommand(weather, "weather"));
 
 
         // Fun Module - mostly ascii, memes, pictures, games
-        CommandRegistry funModule = new CommandRegistry(CommandRegistry.Module.FUN);
+        CommandRegistry funModule = new CommandRegistry(Module.FUN);
         funModule.registerCommand(new AkinatorCommand("akinator", "aki"));
-        funModule.registerCommand(new DanceCommand("dance"));
+        funModule.registerCommand(new DanceCommand(cacheMetrics, "dance"));
         funModule.registerCommand(new JokeCommand("joke", "jk"));
         funModule.registerCommand(new RiotCommand("riot"));
         funModule.registerCommand(new SayCommand("say"));
@@ -201,22 +207,26 @@ public class CommandInitializer {
 
         // Music Module
 
-        CommandRegistry musicModule = new CommandRegistry(CommandRegistry.Module.MUSIC);
+        CommandRegistry musicModule = new CommandRegistry(Module.MUSIC);
         /* Control */
         musicModule.registerCommand(new DestroyCommand("destroy"));
         musicModule.registerCommand(new JoinCommand("join", "summon", "jn", "j"));
         musicModule.registerCommand(new LeaveCommand("leave", "lv"));
         musicModule.registerCommand(new PauseCommand("pause", "pa", "ps"));
-        musicModule.registerCommand(new PlayCommand(Arrays.asList(SearchUtil.SearchProvider.YOUTUBE, SearchUtil.SearchProvider.SOUNDCLOUD),
+        musicModule.registerCommand(new PlayCommand(trackSearcher, videoSelectionCache,
+                Arrays.asList(SearchProvider.YOUTUBE, SearchProvider.SOUNDCLOUD),
                 PLAY_COMM_NAME, "p"));
-        musicModule.registerCommand(new PlayCommand(Collections.singletonList(SearchUtil.SearchProvider.YOUTUBE),
+        musicModule.registerCommand(new PlayCommand(trackSearcher, videoSelectionCache,
+                Collections.singletonList(SearchProvider.YOUTUBE),
                 YOUTUBE_COMM_NAME, "yt"));
-        musicModule.registerCommand(new PlayCommand(Collections.singletonList(SearchUtil.SearchProvider.SOUNDCLOUD),
+        musicModule.registerCommand(new PlayCommand(trackSearcher, videoSelectionCache,
+                Collections.singletonList(SearchProvider.SOUNDCLOUD),
                 SOUNDCLOUD_COMM_NAME, "sc"));
         musicModule.registerCommand(new PlaySplitCommand("split"));
         musicModule.registerCommand(new RepeatCommand("repeat", "rep", "loop"));
         musicModule.registerCommand(new ReshuffleCommand("reshuffle", "resh"));
-        musicModule.registerCommand(new SelectCommand("select", buildNumericalSelectAliases("sel")));
+        musicModule.registerCommand(new SelectCommand(videoSelectionCache, "select",
+                buildNumericalSelectAliases("sel")));
         musicModule.registerCommand(new ShuffleCommand("shuffle", "sh", "random"));
         musicModule.registerCommand(new SkipCommand(SKIP_COMM_NAME, "sk", "s"));
         musicModule.registerCommand(new StopCommand("stop", "st"));
@@ -246,12 +256,12 @@ public class CommandInitializer {
      * @return String array that contains string representation of numbers with addOnAliases.
      */
     private static String[] buildNumericalSelectAliases(String... extraAliases) {
-        String[] selectTrackAliases = new String[SearchUtil.MAX_RESULTS + extraAliases.length];
+        String[] selectTrackAliases = new String[TrackSearcher.MAX_RESULTS + extraAliases.length];
         int i = 0;
         for (; i < extraAliases.length; i++) {
             selectTrackAliases[i] = extraAliases[i];
         }
-        for (; i < SearchUtil.MAX_RESULTS + extraAliases.length; i++) {
+        for (; i < TrackSearcher.MAX_RESULTS + extraAliases.length; i++) {
             selectTrackAliases[i] = String.valueOf(i - extraAliases.length + 1);
         }
         return selectTrackAliases;

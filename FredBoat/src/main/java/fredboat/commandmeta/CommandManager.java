@@ -26,13 +26,17 @@
 package fredboat.commandmeta;
 
 
-import fredboat.audio.player.PlayerRegistry;
-import fredboat.commandmeta.abs.*;
+import fredboat.audio.player.MusicTextChannelProvider;
+import fredboat.commandmeta.abs.Command;
+import fredboat.commandmeta.abs.CommandContext;
+import fredboat.commandmeta.abs.ICommandRestricted;
+import fredboat.commandmeta.abs.IMusicCommand;
+import fredboat.definitions.PermissionLevel;
 import fredboat.feature.PatronageChecker;
 import fredboat.feature.metrics.Metrics;
 import fredboat.feature.togglz.FeatureFlags;
+import fredboat.main.Launcher;
 import fredboat.messaging.CentralMessaging;
-import fredboat.perms.PermissionLevel;
 import fredboat.perms.PermsUtil;
 import fredboat.shared.constant.BotConstants;
 import fredboat.util.DiscordUtil;
@@ -40,23 +44,28 @@ import fredboat.util.TextUtils;
 import net.dv8tion.jda.core.entities.Guild;
 import net.dv8tion.jda.core.entities.Member;
 import net.dv8tion.jda.core.entities.TextChannel;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+@Component
 public class CommandManager {
-
-    private static final Logger log = LoggerFactory.getLogger(CommandManager.class);
 
     public static final Set<Command> disabledCommands = new HashSet<>(0);
 
     public static final AtomicInteger totalCommandsExecuted = new AtomicInteger(0);
+    private final PatronageChecker patronageChecker;
+    private final MusicTextChannelProvider musicTextChannelProvider;
 
-    public static void prefixCalled(CommandContext context) {
+    public CommandManager(PatronageChecker patronageChecker, MusicTextChannelProvider musicTextChannelProvider) {
+        this.patronageChecker = patronageChecker;
+        this.musicTextChannelProvider = musicTextChannelProvider;
+    }
+
+    public void prefixCalled(CommandContext context) {
         Guild guild = context.guild;
         Command invoked = context.command;
         TextChannel channel = context.channel;
@@ -66,7 +75,7 @@ public class CommandManager {
         Metrics.commandsExecuted.labels(invoked.getClass().getSimpleName()).inc();
 
         if (FeatureFlags.PATRON_VALIDATION.isActive()) {
-            PatronageChecker.Status status = PatronageCheckerHolder.instance.getStatus(guild);
+            PatronageChecker.Status status = patronageChecker.getStatus(guild);
             if (!status.isValid()) {
                 String msg = "Access denied. This bot can only be used if invited from <https://patron.fredboat.com/> "
                         + "by someone who currently has a valid pledge on Patreon.\n**Denial reason:** " + status.getReason() + "\n\n";
@@ -79,7 +88,7 @@ public class CommandManager {
         }
 
         //Hardcode music commands in FredBoatHangout. Blacklist any channel that isn't #spam_and_music or #staff, but whitelist Admins
-        if (guild.getIdLong() == BotConstants.FREDBOAT_HANGOUT_ID && DiscordUtil.isOfficialBot()) {
+        if (guild.getIdLong() == BotConstants.FREDBOAT_HANGOUT_ID && DiscordUtil.isOfficialBot(Launcher.getBotController().getCredentials())) {
             if (!channel.getId().equals("174821093633294338") // #spam_and_music
                     && !channel.getId().equals("217526705298866177") // #staff
                     && !PermsUtil.checkPerms(PermissionLevel.ADMIN, invoker)) {
@@ -108,7 +117,7 @@ public class CommandManager {
         }
 
         if (invoked instanceof IMusicCommand) {
-            PlayerRegistry.getOrCreate(guild).setCurrentTC(channel);
+            musicTextChannelProvider.setMusicChannel(channel);
         }
 
         try {
@@ -124,10 +133,5 @@ public class CommandManager {
             TextUtils.handleException(e, context);
         }
 
-    }
-
-    //holder class pattern for the checker
-    private static class PatronageCheckerHolder {
-        private static final PatronageChecker instance = new PatronageChecker();
     }
 }
